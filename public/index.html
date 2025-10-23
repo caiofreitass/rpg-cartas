@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>RPG de Lobisomem, Vampiro, Bruxa</title>
+  <title>RPG de Lobisomem, Vampiro e Bruxa</title>
   <script src="/socket.io/socket.io.js"></script>
   <script src="client.js" defer></script>
   <style>
@@ -24,23 +24,30 @@
     .player {
       border: 1px solid #555;
       padding: 5px;
-      margin: 2px 0;
+      margin: 4px 0;
       border-radius: 5px;
-      text-align: center;
       background: #333;
+      text-align: center;
       position: relative;
+      transition: background 0.2s ease;
     }
     .player.dead {
       background: #550000;
       text-decoration: line-through;
-      opacity: 0.7;
+      opacity: 0.6;
     }
     .turn-indicator {
       position: absolute;
-      left: -20px;
+      left: -22px;
       top: 50%;
       transform: translateY(-50%);
-      font-size: 16px;
+      font-size: 18px;
+    }
+    .player.active {
+      background: #fffa8a;
+      color: #111;
+      font-weight: bold;
+      border-color: #fff176;
     }
     select {
       padding: 5px;
@@ -51,11 +58,9 @@
       background: #444;
       color: #fff;
     }
-    #abilities {
-      display: flex;
-      flex-direction: column;
+    #abilities, #targetSelect {
       width: 300px;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
     }
     #restartBtn {
       padding: 5px 10px;
@@ -72,8 +77,8 @@
       margin-top: 10px;
     }
     #console {
-      width: 300px;
-      height: 150px;
+      width: 320px;
+      height: 160px;
       background: #111;
       border: 1px solid #555;
       border-radius: 5px;
@@ -82,6 +87,22 @@
       padding: 5px;
       font-size: 14px;
     }
+    .log {
+      margin: 2px 0;
+    }
+    .atk {
+      color: #ff4d4d;
+    }
+    .heal {
+      color: #4dff4d;
+    }
+    .buff {
+      color: #ffd24d;
+    }
+    .death {
+      color: #ff8888;
+      font-style: italic;
+    }
   </style>
 </head>
 <body>
@@ -89,10 +110,10 @@
 
   <div id="players"></div>
 
-  <label for="targetSelect">Escolha seu alvo:</label>
+  <label for="targetSelect">🎯 Escolha seu alvo:</label>
   <select id="targetSelect"></select>
 
-  <label for="abilitySelect">Escolha sua habilidade:</label>
+  <label for="abilitySelect">✨ Escolha sua habilidade:</label>
   <select id="abilitySelect"></select>
 
   <button id="restartBtn">Reiniciar partida</button>

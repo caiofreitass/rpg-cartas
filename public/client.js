@@ -1,160 +1,139 @@
 const socket = io();
 
+let myId = null;
+let currentTurn = null;
+let classesData = {};
+let selectedClass = null;
+
 const playersDiv = document.getElementById("players");
+const turnDiv = document.getElementById("turn");
+const classSelect = document.getElementById("classSelect");
 const abilitySelect = document.getElementById("abilitySelect");
 const targetSelect = document.getElementById("targetSelect");
-const restartBtn = document.getElementById("restartBtn");
-const restartDiv = document.getElementById("restartVotes");
-const gameConsole = document.getElementById("console");
+const actionButton = document.getElementById("actionButton");
+const restartButton = document.getElementById("restartButton");
+const logDiv = document.getElementById("log");
+const nameInput = document.getElementById("nameInput");
+const nameButton = document.getElementById("nameButton");
 
-let playerId;
-let currentTurn;
-let classesData = {};
-let playersData = {};
-
-// Inicialização
-socket.on("init", ({ id, players, currentTurn: ct }) => {
-  playerId = id;
-  currentTurn = ct;
-  playersData = players;
-
-  // Solicita nome do jogador
-  let nome = "";
-  while(!nome.trim()){
-    nome = prompt("Digite seu nome de jogador:");
-  }
-  socket.emit("setName", nome);
-
-  renderPlayers(players);
+socket.on("init", (data) => {
+  myId = data.id;
+  updatePlayers(data.players);
+  currentTurn = data.currentTurn;
 });
 
-// Recebe classes do servidor
 socket.on("classesData", (data) => {
   classesData = data;
-  renderAbilities();
 });
 
-// Escolha de classe
 socket.on("chooseClass", (classes) => {
-  let escolha = "";
-  while(!classes.includes(escolha)){
-    escolha = prompt("Escolha sua classe: " + classes.join(", "));
-  }
-  socket.emit("setClass", escolha);
+  classSelect.innerHTML = "";
+  classes.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = c;
+    classSelect.appendChild(opt);
+  });
+  document.getElementById("classArea").style.display = "block";
 });
 
-// Atualização de jogadores
+document.getElementById("chooseClassBtn").onclick = () => {
+  const classe = classSelect.value;
+  socket.emit("setClass", classe);
+  document.getElementById("classArea").style.display = "none";
+};
+
+nameButton.onclick = () => {
+  const name = nameInput.value.trim();
+  if(name) socket.emit("setName", name);
+  document.getElementById("nameArea").style.display = "none";
+};
+
 socket.on("updatePlayers", (players) => {
-  playersData = players;
-  renderPlayers(players);
-  renderAbilities();
+  updatePlayers(players);
+  updateTargets(players);
 });
 
-// Mudança de turno
-socket.on("turnChanged", (id) => {
-  currentTurn = id;
-  renderPlayersDivHighlight();
-  renderAbilities();
+socket.on("turnChanged", (turnId) => {
+  currentTurn = turnId;
+  updateTurnDisplay();
 });
 
-// Mensagens de ações
 socket.on("message", (msg) => {
-  const p = document.createElement("div");
+  const p = document.createElement("p");
   p.textContent = msg;
-  gameConsole.appendChild(p);
-  gameConsole.scrollTop = gameConsole.scrollHeight;
+  logDiv.appendChild(p);
+  logDiv.scrollTop = logDiv.scrollHeight;
+  console.log("📢 " + msg);
 });
 
-// Votos para reiniciar
-socket.on("restartVotes", ({ votes, totalPlayers }) => {
-  restartDiv.textContent = `${votes}/${totalPlayers} jogadores prontos para reiniciar`;
-});
-
-// Partida reiniciada
 socket.on("gameRestarted", () => {
-  restartDiv.textContent = "";
-  gameConsole.innerHTML = "";
-  renderPlayers(playersData);
+  logDiv.innerHTML = "<p>🔄 O jogo foi reiniciado!</p>";
 });
 
-// Botão de reiniciar
-restartBtn.addEventListener("click", () => {
-  socket.emit("restartVote");
+socket.on("restartVotes", ({ votes, totalPlayers }) => {
+  logDiv.innerHTML += `<p>🗳️ Votos para reiniciar: ${votes}/${totalPlayers}</p>`;
 });
 
-// Renderiza jogadores e select de alvo
-function renderPlayers(players) {
+function updatePlayers(players) {
   playersDiv.innerHTML = "";
-  targetSelect.innerHTML = "";
-
-  for (let id in players) {
+  for (const id in players) {
     const p = players[id];
     const div = document.createElement("div");
     div.className = "player";
-    if(!p.alive) div.classList.add("dead");
-
-    if(id === currentTurn){
-      const span = document.createElement("span");
-      span.className = "turn-indicator";
-      span.textContent = "👉";
-      div.appendChild(span);
-    }
-
-    div.innerHTML += `<strong>${p.name}</strong> (${p.classe || "?"})<br>HP: ${p.hp}`;
+    div.style.border = id === currentTurn ? "2px solid gold" : "1px solid gray";
+    div.style.background = p.alive ? "#222" : "#333";
+    div.style.color = p.alive ? "white" : "red";
+    div.innerHTML = `<strong>${p.name}</strong> (${p.classe || "?"})<br>❤️ ${p.hp}`;
     playersDiv.appendChild(div);
+  }
+}
 
-    // Preenche select apenas com inimigos vivos
-    if(id !== playerId && p.alive){
-      const option = document.createElement("option");
-      option.value = id;
-      option.textContent = p.name;
-      targetSelect.appendChild(option);
+function updateTargets(players) {
+  targetSelect.innerHTML = "";
+  for (const id in players) {
+    if (id !== myId && players[id].alive) {
+      const opt = document.createElement("option");
+      opt.value = id;
+      opt.textContent = players[id].name;
+      targetSelect.appendChild(opt);
     }
   }
 
-  renderPlayersDivHighlight();
-}
-
-// Destaque do jogador ativo
-function renderPlayersDivHighlight() {
-  const children = playersDiv.children;
-  for(let div of children){
-    div.style.background = "";
+  const me = Object.values(players).find(p => p.id === myId);
+  if(me && me.classe && classesData[me.classe]) {
+    abilitySelect.innerHTML = "";
+    classesData[me.classe].forEach((a, i) => {
+      const opt = document.createElement("option");
+      opt.value = i+1;
+      opt.textContent = `${a.name} (${a.type === "atk" ? "⚔️" : a.type === "heal" ? "💖" : "✨"})`;
+      abilitySelect.appendChild(opt);
+    });
   }
-  const playerDivs = Array.from(children).filter(d=>d.className.includes("player"));
-  playerDivs.forEach(div=>{
-    const name = div.textContent.split(" ")[0];
-    if(playersData[currentTurn] && name === playersData[currentTurn].name){
-      div.style.background = "lightyellow";
-    }
-  });
 }
 
-// Renderiza habilidades no select
-function renderAbilities() {
-  abilitySelect.innerHTML = "";
-  if(!playersData[playerId] || !playersData[playerId].classe || !classesData) return;
-  const player = playersData[playerId];
-  const abilities = classesData[player.classe] || [];
+function updateTurnDisplay() {
+  const allPlayers = document.querySelectorAll(".player");
+  allPlayers.forEach(p => p.style.opacity = "1");
 
-  abilities.forEach((ab, i)=>{
-    const option = document.createElement("option");
-    option.value = i;
-    option.textContent = `${ab.name} (${ab.type}${ab.type==="atk"||ab.type==="heal"?" "+ab.value:""})`;
-    abilitySelect.appendChild(option);
-  });
+  if (currentTurn === myId) {
+    turnDiv.textContent = "👉 É sua vez!";
+  } else {
+    turnDiv.textContent = "⏳ Aguardando o turno de outro jogador...";
+  }
+
+  // Marcar o jogador da vez com emoji
+  const turnPlayer = [...allPlayers].find(div => div.innerHTML.includes(playersDiv.children.namedItem));
 }
 
-// Enviar ação ao mudar habilidade ou alvo
-abilitySelect.addEventListener("change", sendAction);
-targetSelect.addEventListener("change", sendAction);
+actionButton.onclick = () => {
+  if (currentTurn !== myId) return alert("Não é sua vez!");
+  const targetId = targetSelect.value;
+  const abilityIndex = abilitySelect.value;
+  if (!targetId || !abilityIndex) return;
+  socket.emit("playAbility", { targetId, abilityIndex });
+};
 
-function sendAction(){
-  const abilityIndex = parseInt(abilitySelect.value);
-  const selectedTarget = targetSelect.value;
-
-  if(currentTurn !== playerId) return;
-  if(!selectedTarget) return;
-
-  socket.emit("playAbility", { targetId: selectedTarget, abilityIndex: abilityIndex+1 });
-}
+restartButton.onclick = () => {
+  socket.emit("restartVote");
+};
