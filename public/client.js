@@ -1,7 +1,7 @@
 const socket = io();
 let playerId = null;
 let currentTurn = null;
-let classesData = {};
+let classesData = {}; // dados do servidor
 let playersData = {};
 let loggedIn = false;
 
@@ -45,8 +45,6 @@ socket.on("loginResponse", r => {
   if (r.success) {
     loggedIn = true;
     document.getElementById("loginPanel").style.display = "none";
-
-    // Define nome do jogador no servidor
     const username = document.getElementById("username").value;
     socket.emit("setName", username);
   }
