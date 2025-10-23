@@ -1,13 +1,13 @@
 const socket = io();
 
 const playersDiv = document.getElementById("players");
-const abilitiesDiv = document.getElementById("abilities");
+const abilitySelect = document.getElementById("abilitySelect");
+const targetSelect = document.getElementById("targetSelect");
 const restartBtn = document.getElementById("restartBtn");
 const restartDiv = document.getElementById("restartVotes");
 
 let playerId;
 let currentTurn;
-let targetId = null;
 let classesData = {};
 let playersData = {};
 
@@ -16,7 +16,6 @@ socket.on("init", ({ id, players, currentTurn: ct }) => {
   playerId = id;
   currentTurn = ct;
   playersData = players;
-  renderPlayers(players);
 
   // Solicita nome do jogador
   let nome = "";
@@ -24,6 +23,8 @@ socket.on("init", ({ id, players, currentTurn: ct }) => {
     nome = prompt("Digite seu nome de jogador:");
   }
   socket.emit("setName", nome);
+
+  renderPlayers(players);
 });
 
 // Recebe classes do servidor
@@ -45,12 +46,14 @@ socket.on("chooseClass", (classes) => {
 socket.on("updatePlayers", (players) => {
   playersData = players;
   renderPlayers(players);
+  renderAbilities();
 });
 
 // Mudança de turno
 socket.on("turnChanged", (id) => {
   currentTurn = id;
   renderPlayersDivHighlight();
+  renderAbilities();
 });
 
 // Votos para reiniciar
@@ -60,7 +63,6 @@ socket.on("restartVotes", ({ votes, totalPlayers }) => {
 
 // Partida reiniciada
 socket.on("gameRestarted", () => {
-  targetId = null;
   restartDiv.textContent = "";
   renderPlayers(playersData);
 });
@@ -70,11 +72,10 @@ restartBtn.addEventListener("click", () => {
   socket.emit("restartVote");
 });
 
-// Renderiza jogadores
+// Renderiza jogadores e select de alvo
 function renderPlayers(players) {
   playersDiv.innerHTML = "";
-  const targetSelect = document.createElement("select");
-  targetSelect.id = "targetSelect";
+  targetSelect.innerHTML = "";
 
   for (let id in players) {
     const p = players[id];
@@ -82,7 +83,6 @@ function renderPlayers(players) {
     div.className = "player";
     if(!p.alive) div.classList.add("dead");
     div.innerHTML = `<strong>${p.name}</strong> (${p.classe || "?"})<br>HP: ${p.hp}`;
-
     playersDiv.appendChild(div);
 
     // Preenche select apenas com inimigos vivos
@@ -94,10 +94,6 @@ function renderPlayers(players) {
     }
   }
 
-  playersDiv.appendChild(document.createElement("hr"));
-  playersDiv.appendChild(targetSelect);
-
-  renderAbilities();
   renderPlayersDivHighlight();
 }
 
@@ -115,22 +111,31 @@ function renderPlayersDivHighlight() {
   });
 }
 
-// Renderiza habilidades
+// Renderiza habilidades no select
 function renderAbilities() {
-  abilitiesDiv.innerHTML = "";
+  abilitySelect.innerHTML = "";
   if(!playersData[playerId] || !playersData[playerId].classe || !classesData) return;
   const player = playersData[playerId];
   const abilities = classesData[player.classe] || [];
-  const targetSelect = document.getElementById("targetSelect");
 
   abilities.forEach((ab, i)=>{
-    const btn = document.createElement("button");
-    btn.textContent = `${ab.name} (${ab.type}${ab.type==="atk"||ab.type==="heal"?" "+ab.value:""})`;
-    btn.disabled = currentTurn !== playerId || (ab.type==="atk" && targetSelect.options.length===0);
-    btn.onclick = () => {
-      const selectedTarget = targetSelect.value;
-      socket.emit("playAbility", { targetId: selectedTarget, abilityIndex: i+1 });
-    };
-    abilitiesDiv.appendChild(btn);
+    const option = document.createElement("option");
+    option.value = i;
+    option.textContent = `${ab.name} (${ab.type}${ab.type==="atk"||ab.type==="heal"?" "+ab.value:""})`;
+    abilitySelect.appendChild(option);
   });
+}
+
+// Enviar ação ao mudar habilidade ou alvo
+abilitySelect.addEventListener("change", sendAction);
+targetSelect.addEventListener("change", sendAction);
+
+function sendAction(){
+  const abilityIndex = parseInt(abilitySelect.value);
+  const selectedTarget = targetSelect.value;
+
+  if(currentTurn !== playerId) return;
+  if(!selectedTarget) return;
+
+  socket.emit("playAbility", { targetId: selectedTarget, abilityIndex: abilityIndex+1 });
 }
