@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>RPG de Cartas - Lobisomem, Vampiro, Bruxa</title>
+  <title>RPG de Lobisomem, Vampiro, Bruxa</title>
   <script src="/socket.io/socket.io.js"></script>
   <script src="client.js" defer></script>
   <style>
@@ -28,11 +28,19 @@
       border-radius: 5px;
       text-align: center;
       background: #333;
+      position: relative;
     }
     .player.dead {
       background: #550000;
       text-decoration: line-through;
       opacity: 0.7;
+    }
+    .turn-indicator {
+      position: absolute;
+      left: -20px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px;
     }
     select {
       padding: 5px;
@@ -63,6 +71,17 @@
     #restartVotes {
       margin-top: 10px;
     }
+    #console {
+      width: 300px;
+      height: 150px;
+      background: #111;
+      border: 1px solid #555;
+      border-radius: 5px;
+      margin-top: 20px;
+      overflow-y: auto;
+      padding: 5px;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
@@ -78,5 +97,7 @@
 
   <button id="restartBtn">Reiniciar partida</button>
   <div id="restartVotes"></div>
+
+  <div id="console"></div>
 </body>
 </html>

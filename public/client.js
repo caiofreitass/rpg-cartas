@@ -5,6 +5,7 @@ const abilitySelect = document.getElementById("abilitySelect");
 const targetSelect = document.getElementById("targetSelect");
 const restartBtn = document.getElementById("restartBtn");
 const restartDiv = document.getElementById("restartVotes");
+const gameConsole = document.getElementById("console");
 
 let playerId;
 let currentTurn;
@@ -56,6 +57,14 @@ socket.on("turnChanged", (id) => {
   renderAbilities();
 });
 
+// Mensagens de ações
+socket.on("message", (msg) => {
+  const p = document.createElement("div");
+  p.textContent = msg;
+  gameConsole.appendChild(p);
+  gameConsole.scrollTop = gameConsole.scrollHeight;
+});
+
 // Votos para reiniciar
 socket.on("restartVotes", ({ votes, totalPlayers }) => {
   restartDiv.textContent = `${votes}/${totalPlayers} jogadores prontos para reiniciar`;
@@ -64,6 +73,7 @@ socket.on("restartVotes", ({ votes, totalPlayers }) => {
 // Partida reiniciada
 socket.on("gameRestarted", () => {
   restartDiv.textContent = "";
+  gameConsole.innerHTML = "";
   renderPlayers(playersData);
 });
 
@@ -82,7 +92,15 @@ function renderPlayers(players) {
     const div = document.createElement("div");
     div.className = "player";
     if(!p.alive) div.classList.add("dead");
-    div.innerHTML = `<strong>${p.name}</strong> (${p.classe || "?"})<br>HP: ${p.hp}`;
+
+    if(id === currentTurn){
+      const span = document.createElement("span");
+      span.className = "turn-indicator";
+      span.textContent = "👉";
+      div.appendChild(span);
+    }
+
+    div.innerHTML += `<strong>${p.name}</strong> (${p.classe || "?"})<br>HP: ${p.hp}`;
     playersDiv.appendChild(div);
 
     // Preenche select apenas com inimigos vivos
@@ -103,9 +121,10 @@ function renderPlayersDivHighlight() {
   for(let div of children){
     div.style.background = "";
   }
-  const playerDivs = Array.from(children).filter(d=>d.className==="player");
+  const playerDivs = Array.from(children).filter(d=>d.className.includes("player"));
   playerDivs.forEach(div=>{
-    if(div.textContent.includes(currentTurn)){
+    const name = div.textContent.split(" ")[0];
+    if(playersData[currentTurn] && name === playersData[currentTurn].name){
       div.style.background = "lightyellow";
     }
   });
