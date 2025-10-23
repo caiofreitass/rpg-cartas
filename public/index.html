@@ -93,9 +93,9 @@
       text-align: left;
       z-index: 999;
     }
-    #loginPanel input {
+    #loginPanel input, #loginPanel select {
       display: block;
-      width: 150px;
+      width: 160px;
       margin: 5px 0;
       padding: 5px;
       border-radius: 4px;
@@ -113,10 +113,18 @@
 <body>
   <h1>🃏 RPG de Cartas</h1>
 
-  <!-- Painel de login/registro -->
   <div id="loginPanel">
     <input id="username" placeholder="Usuário">
     <input id="password" placeholder="Senha" type="password">
+    
+    <label for="classSelect" style="color:#fff; font-size:0.9em;">Escolha sua classe:</label>
+    <select id="classSelect">
+      <option value="">-- Selecionar --</option>
+      <option value="Lobisomem">Lobisomem 🐺</option>
+      <option value="Vampiro">Vampiro 🧛‍♂️</option>
+      <option value="Bruxa">Bruxa 🧙‍♀️</option>
+    </select>
+
     <button id="btnRegister">Registrar</button>
     <button id="btnLogin">Login</button>
     <div id="loginMsg"></div>
@@ -128,7 +136,6 @@
   <div id="log"></div>
   <footer>Feito por Caio ⚡</footer>
 
-  <!-- Socket.io e client.js -->
   <script src="/socket.io/socket.io.js"></script>
   <script src="client.js"></script>
 </body>
