@@ -12,6 +12,9 @@ let players = {};
 let turnOrder = [];
 let currentTurnIndex = 0;
 
+// Reinício
+let restartVotes = {};
+
 // Classes e habilidades balanceadas
 const classes = {
   "Lobisomem": [
@@ -51,6 +54,21 @@ function nextTurn() {
   io.emit("turnChanged", turnOrder[currentTurnIndex]);
 }
 
+function resetGame() {
+  for (let id in players) {
+    const p = players[id];
+    if(p.classe){
+      p.hp = initialHP[p.classe];
+      p.alive = true;
+    }
+  }
+  currentTurnIndex = 0;
+  restartVotes = {};
+  io.emit("updatePlayers", players);
+  io.emit("gameRestarted");
+  io.emit("turnChanged", turnOrder[currentTurnIndex]);
+}
+
 io.on("connection", (socket) => {
   console.log("Novo jogador:", socket.id);
 
@@ -58,25 +76,30 @@ io.on("connection", (socket) => {
     id: socket.id,
     name: "Jogador",
     classe: null,
-    hp: 0, // será definido ao escolher classe
+    hp: 0,
     alive: true
   };
   turnOrder.push(socket.id);
 
+  // Envia classes para o client
+  socket.emit("classesData", classes);
+
+  // Inicializa player
   socket.emit("init", { id: socket.id, players, currentTurn: turnOrder[currentTurnIndex] });
 
-  // Escolha de classe
+  // Pergunta classe ao jogador
   socket.emit("chooseClass", Object.keys(classes));
 
+  // Recebe classe escolhida
   socket.on("setClass", (classe) => {
     if(classes[classe]){
       players[socket.id].classe = classe;
-      players[socket.id].hp = initialHP[classe]; // define HP baseado na classe
+      players[socket.id].hp = initialHP[classe];
       io.emit("updatePlayers", players);
     }
   });
 
-  // Nome do jogador
+  // Recebe nome do jogador
   socket.on("setName", (name)=>{
     players[socket.id].name = name || "Jogador";
     io.emit("updatePlayers", players);
@@ -100,23 +123,41 @@ io.on("connection", (socket) => {
         target.alive = false;
         io.emit("message", `${target.name} morreu!`);
       }
-      io.to(socket.id).emit("message", `Você atacou ${target.name} com ${ability.name} causando ${ability.value} de dano!`);
-      io.to(targetId).emit("message", `Você foi atacado por ${player.name} com ${ability.name} causando ${ability.value} de dano!`);
+      io.emit("message", `${player.name} atacou ${target.name} com ${ability.name} causando ${ability.value} de dano!`);
     } else if(ability.type === "heal"){
       player.hp += ability.value;
-      io.to(socket.id).emit("message", `Você usou ${ability.name} e recuperou ${ability.value} HP!`);
+      io.emit("message", `${player.name} usou ${ability.name} e recuperou ${ability.value} HP!`);
     } else if(ability.type === "buff"){
-      io.to(socket.id).emit("message", `Você usou ${ability.name} e se fortaleceu!`);
+      io.emit("message", `${player.name} usou ${ability.name} e se fortaleceu!`);
     }
 
     io.emit("updatePlayers", players);
     nextTurn();
   });
 
+  // Chat global
+  socket.on("chatMessage", (msg) => {
+    if(!msg) return;
+    io.emit("message", `${players[socket.id].name}: ${msg}`);
+  });
+
+  // Voto para reiniciar
+  socket.on("restartVote", () => {
+    restartVotes[socket.id] = true;
+    const totalPlayers = Object.keys(players).length;
+    const votes = Object.keys(restartVotes).length;
+    io.emit("restartVotes", { votes, totalPlayers });
+    if(votes === totalPlayers){
+      resetGame();
+    }
+  });
+
+  // Desconexão
   socket.on("disconnect", () => {
     console.log("Jogador saiu:", socket.id);
     delete players[socket.id];
     turnOrder = turnOrder.filter(id => id !== socket.id);
+    delete restartVotes[socket.id];
     if(currentTurnIndex >= turnOrder.length) currentTurnIndex = 0;
     io.emit("updatePlayers", players);
     if(turnOrder.length>0) io.emit("turnChanged", turnOrder[currentTurnIndex]);
