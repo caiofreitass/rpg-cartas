@@ -3,6 +3,7 @@ let playerId = null;
 let currentTurn = null;
 let classesData = {};
 let playersData = {};
+let loggedIn = false;
 
 // Emojis das classes
 const classEmojis = {
@@ -11,17 +12,30 @@ const classEmojis = {
   "Bruxa": "🧙‍♀️"
 };
 
-// Recebe lista de classes do servidor
+// -------------------- LOGIN --------------------
+socket.on("loginResponse", r => {
+  const msg = document.getElementById("loginMsg");
+  msg.style.color = r.success ? "#00ff00" : "#ff5555";
+  msg.innerText = r.message;
+
+  if (r.success) {
+    loggedIn = true;
+    document.getElementById("loginPanel").style.display = "none";
+
+    // Define nome do jogador no servidor
+    const username = document.getElementById("username").value;
+    socket.emit("setName", username);
+
+    // Escolhe classe aleatória no login (ou você pode criar um seletor depois)
+    const validClasses = Object.keys(classesData);
+    const chosen = validClasses[Math.floor(Math.random() * validClasses.length)];
+    socket.emit("setClass", chosen);
+  }
+});
+
+// -------------------- RECEBENDO DADOS --------------------
 socket.on("classesData", (data) => {
   classesData = data;
-
-  const name = prompt("Digite seu nome:");
-  socket.emit("setName", name);
-
-  const classe = prompt("Escolha sua classe: Lobisomem, Vampiro ou Bruxa");
-  const validClasses = ["Lobisomem", "Vampiro", "Bruxa"];
-  const chosen = validClasses.includes(classe) ? classe : validClasses[Math.floor(Math.random() * 3)];
-  socket.emit("setClass", chosen);
 });
 
 socket.on("init", (data) => {
@@ -61,6 +75,7 @@ socket.on("gameRestarted", () => {
   addMessage("♻️ O jogo foi reiniciado!");
 });
 
+// -------------------- RENDER --------------------
 function renderPlayers() {
   const container = document.getElementById("players");
   container.innerHTML = "";
@@ -105,6 +120,8 @@ function renderTurnIndicator() {
 }
 
 function renderActions() {
+  if (!loggedIn) return; // não mostra ações se não logado
+
   const container = document.getElementById("actions");
   container.innerHTML = "";
 
@@ -164,18 +181,17 @@ function renderActions() {
   container.appendChild(restartBtn);
 }
 
-// Mensagens coloridas e emojis
+// -------------------- MENSAGENS --------------------
 function addMessage(msg) {
   const log = document.getElementById("log");
   const entry = document.createElement("div");
 
-  if (msg.includes("causando")) entry.style.color = "red"; // ataque
-  else if (msg.includes("recuperou")) entry.style.color = "lightgreen"; // cura
-  else if (msg.includes("fortaleceu")) entry.style.color = "gold"; // buff
-  else if (msg.includes("morreu")) entry.style.color = "#ff5555"; // morte
+  if (msg.includes("causando")) entry.style.color = "red";
+  else if (msg.includes("recuperou")) entry.style.color = "lightgreen";
+  else if (msg.includes("fortaleceu")) entry.style.color = "gold";
+  else if (msg.includes("morreu")) entry.style.color = "#ff5555";
   else entry.style.color = "#ccc";
 
-  // Renderiza HTML corretamente
   entry.innerHTML = msg;
   log.appendChild(entry);
   log.scrollTop = log.scrollHeight;

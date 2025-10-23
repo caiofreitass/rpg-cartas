@@ -1,6 +1,9 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
+const fs = require("fs");
+const path = require("path");
+const bcrypt = require("bcrypt");
 
 const app = express();
 const server = http.createServer(app);
@@ -8,6 +11,33 @@ const io = new Server(server);
 
 app.use(express.static("public"));
 
+// --- Arquivo de usuários ---
+const usersFile = path.join(__dirname, "users.json");
+let users = {};
+if (fs.existsSync(usersFile)) {
+  users = JSON.parse(fs.readFileSync(usersFile, "utf8"));
+}
+function saveUsers() {
+  fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
+}
+
+// --- Funções de registro/login ---
+function registerUser(username, password) {
+  if (users[username]) return { success: false, message: "Usuário já existe!" };
+  const hashed = bcrypt.hashSync(password, 10);
+  users[username] = { password: hashed };
+  saveUsers();
+  return { success: true, message: "Registrado com sucesso!" };
+}
+
+function loginUser(username, password) {
+  const user = users[username];
+  if (!user) return { success: false, message: "Usuário não encontrado!" };
+  if (!bcrypt.compareSync(password, user.password)) return { success: false, message: "Senha incorreta!" };
+  return { success: true, message: "Login bem-sucedido!" };
+}
+
+// --- Jogo ---
 let players = {};
 let turnOrder = [];
 let currentTurnIndex = 0;
@@ -19,7 +49,6 @@ const classEmojis = {
   "Bruxa": "🧙‍♀️"
 };
 
-// Classes e habilidades balanceadas
 const classes = {
   "Lobisomem": [
     { name: "Ataque Selvagem", type: "atk", value: 8 },
@@ -44,39 +73,25 @@ const classes = {
   ]
 };
 
-const initialHP = {
-  "Lobisomem": 70,
-  "Vampiro": 60,
-  "Bruxa": 50
-};
+const initialHP = { "Lobisomem": 70, "Vampiro": 60, "Bruxa": 50 };
 
 function nextTurn() {
   if (turnOrder.length === 0) return;
   do {
     currentTurnIndex = (currentTurnIndex + 1) % turnOrder.length;
   } while (!players[turnOrder[currentTurnIndex]]?.alive);
-
   io.emit("turnChanged", turnOrder[currentTurnIndex]);
-
-  // Reduz duração dos buffs
   for (const id in players) {
     const p = players[id];
     if (!p.buffs) continue;
-    p.buffs = p.buffs.filter(b => {
-      b.remaining--;
-      return b.remaining > 0;
-    });
+    p.buffs = p.buffs.filter(b => { b.remaining--; return b.remaining > 0; });
   }
 }
 
 function resetGame() {
   for (let id in players) {
     const p = players[id];
-    if (p.classe) {
-      p.hp = initialHP[p.classe];
-      p.alive = true;
-      p.buffs = [];
-    }
+    if (p.classe) { p.hp = initialHP[p.classe]; p.alive = true; p.buffs = []; }
   }
   currentTurnIndex = 0;
   restartVotes = {};
@@ -88,15 +103,19 @@ function resetGame() {
 io.on("connection", (socket) => {
   console.log("Novo jogador:", socket.id);
 
-  players[socket.id] = {
-    id: socket.id,
-    name: "Jogador",
-    displayName: "Jogador",
-    classe: null,
-    hp: 0,
-    alive: true,
-    buffs: []
-  };
+  // Registro/Login
+  socket.on("register", ({ username, password }) => {
+    const res = registerUser(username, password);
+    socket.emit("registerResponse", res);
+  });
+  socket.on("login", ({ username, password }) => {
+    const res = loginUser(username, password);
+    if (res.success) socket.loggedInUser = username;
+    socket.emit("loginResponse", res);
+  });
+
+  // Adiciona jogador ao jogo
+  players[socket.id] = { id: socket.id, name: "Jogador", displayName: "Jogador", classe: null, hp: 0, alive: true, buffs: [] };
   turnOrder.push(socket.id);
 
   socket.emit("classesData", classes);
@@ -118,12 +137,11 @@ io.on("connection", (socket) => {
     if (players[socket.id].classe) {
       const emoji = classEmojis[players[socket.id].classe] || "";
       players[socket.id].displayName = `${emoji} ${players[socket.id].name}`;
-    } else {
-      players[socket.id].displayName = players[socket.id].name;
-    }
+    } else { players[socket.id].displayName = players[socket.id].name; }
     io.emit("updatePlayers", players);
   });
 
+  // Habilidades e restart
   socket.on("playAbility", ({ targetId, abilityIndex }) => {
     const player = players[socket.id];
     if (!player.alive) return;
@@ -137,65 +155,23 @@ io.on("connection", (socket) => {
     let color = "white";
     let message = "";
 
-    // Aplica buffs antes de ataques
     if (ability.type === "buff") {
-      let buff = null;
-      if (player.classe === "Lobisomem") {
-        buff = { type: "lobisomem", remaining: 3, value: 0 };
-        message = `${player.displayName} usou ${ability.name} e absorverá o dano recebido para somar ao próximo ataque!`;
-      } else if (player.classe === "Vampiro") {
-        buff = { type: "vampiro", remaining: 3, value: 3 };
-        message = `${player.displayName} usou ${ability.name} e aumentará o próximo ataque em 3 por 3 rodadas!`;
-      } else if (player.classe === "Bruxa") {
-        buff = { type: "bruxa", remaining: 3, value: 0 };
-        message = `${player.displayName} lançou ${ability.name}! Quem atacar nos próximos 3 turnos sofrerá penalidade!`;
-      }
+      let buff = { type: player.classe.toLowerCase(), remaining: 3, value: ability.value || 0 };
       if (!player.buffs) player.buffs = [];
       player.buffs.push(buff);
+      message = `${player.displayName} usou ${ability.name}!`;
       color = "gold";
     } else if (ability.type === "heal") {
       player.hp += ability.value;
-      color = "lime";
       message = `${player.displayName} usou ${ability.name} e recuperou ${ability.value} HP!`;
+      color = "lime";
     } else if (ability.type === "atk") {
       let damage = ability.value;
-
-      // Buffs do atacante
-      if (player.buffs) {
-        for (let b of player.buffs) {
-          if (player.classe === "Lobisomem" && b.type === "lobisomem") {
-            damage += b.value;
-            b.value = 0;
-          }
-          if (player.classe === "Vampiro" && b.type === "vampiro") {
-            damage += b.value;
-          }
-        }
-      }
-
-      // Buffs do alvo
-      if (target.buffs) {
-        for (let b of target.buffs) {
-          if (target.classe === "Bruxa" && b.type === "bruxa") {
-            const reflected = Math.floor(damage / 2);
-            player.hp -= reflected;
-            io.emit("message", `<span style="color:red;">${target.displayName} refletiu ${reflected} de dano em ${player.displayName} por causa da Maldição!</span>`);
-          }
-          if (target.classe === "Lobisomem" && b.type === "lobisomem") {
-            b.value += damage;
-          }
-        }
-      }
-
+      if (player.buffs) player.buffs.forEach(b => { if (b.type === player.classe.toLowerCase()) { damage += b.value; b.value = 0; } });
+      if (target.buffs) target.buffs.forEach(b => { if (target.classe.toLowerCase() === "bruxa" && b.type === "bruxa") { player.hp -= Math.floor(damage / 2); } });
       target.hp -= damage;
-      if (target.hp <= 0) {
-        target.hp = 0;
-        target.alive = false;
-        io.emit("message", `<span style="color:red;">💀 ${target.displayName} morreu!</span>`);
-      }
-
-      color = "red";
-      message = `${player.displayName} atacou ${target.displayName} com ${ability.name} causando ${damage} de dano!`;
+      if (target.hp <= 0) { target.hp = 0; target.alive = false; message = `💀 ${target.displayName} morreu!`; color="red"; }
+      message = message || `${player.displayName} atacou ${target.displayName} com ${ability.name} causando ${damage} de dano!`;
     }
 
     io.emit("message", `<span style="color:${color};">${message}</span>`);
@@ -212,7 +188,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    console.log("Jogador saiu:", socket.id);
     delete players[socket.id];
     turnOrder = turnOrder.filter(id => id !== socket.id);
     delete restartVotes[socket.id];

@@ -80,20 +80,83 @@
       padding: 8px;
       border-top: 1px solid #333;
     }
+
+    /* Painel de login/registro */
+    #loginPanel {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: #222;
+      padding: 12px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px #000;
+      text-align: left;
+      z-index: 999;
+    }
+    #loginPanel input {
+      display: block;
+      width: 150px;
+      margin: 5px 0;
+      padding: 5px;
+      border-radius: 4px;
+      border: 1px solid #555;
+      background: #1e1e1e;
+      color: #fff;
+    }
+    #loginMsg {
+      margin-top: 5px;
+      font-size: 0.85em;
+      color: #ff5555;
+    }
   </style>
 </head>
 <body>
   <h1>🃏 RPG de Cartas</h1>
 
+  <!-- Painel de login/registro -->
+  <div id="loginPanel">
+    <input id="username" placeholder="Usuário">
+    <input id="password" placeholder="Senha" type="password">
+    <button id="btnRegister">Registrar</button>
+    <button id="btnLogin">Login</button>
+    <div id="loginMsg"></div>
+  </div>
+
   <div id="turnInfo">Aguardando jogadores...</div>
   <div id="players"></div>
   <div id="actions"></div>
-
   <div id="log"></div>
-
   <footer>Feito por Caio ⚡</footer>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="client.js"></script>
+  <script>
+    const socket = io();
+
+    // Botões de login/registro
+    document.getElementById("btnRegister").onclick = () => {
+      const u = document.getElementById("username").value;
+      const p = document.getElementById("password").value;
+      socket.emit("register", { username: u, password: p });
+    };
+    document.getElementById("btnLogin").onclick = () => {
+      const u = document.getElementById("username").value;
+      const p = document.getElementById("password").value;
+      socket.emit("login", { username: u, password: p });
+    };
+
+    socket.on("registerResponse", r => {
+      const msg = document.getElementById("loginMsg");
+      msg.style.color = r.success ? "#00ff00" : "#ff5555";
+      msg.innerText = r.message;
+    });
+
+    socket.on("loginResponse", r => {
+      const msg = document.getElementById("loginMsg");
+      msg.style.color = r.success ? "#00ff00" : "#ff5555";
+      msg.innerText = r.message;
+      if(r.success) document.getElementById("loginPanel").style.display="none";
+    });
+  </script>
 </body>
 </html>
