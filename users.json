@@ -4,5 +4,8 @@
   },
   "teste": {
     "password": "$2b$10$ej9yMUwM5XdRR0zrNIrJpOYNFeXC.uuC1.605iKHrkbE5DteRk55u"
+  },
+  "teste1": {
+    "password": "$2b$10$j0z0G/xVZlMh36UI05mAwOFM0t3s1vvsUZnNiS4jtJDN7rKfyf6iu"
   }
 }

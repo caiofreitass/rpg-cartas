@@ -86,7 +86,7 @@ function nextTurn() {
   if (turnOrder.length === 0) return;
 
   const hunterAlive = hunter?.alive;
-  if (!hunterAlive && Math.random() < 0.3) { // 30% chance
+  if (!hunterAlive && Math.random() < 0.15) { // 15% chance
     hunter = { id: "hunter", name: "Caçador", displayName: "🗡️ Caçador", hp: 24, alive: true };
     turnOrder.push("hunter");
     players["hunter"] = hunter;
@@ -154,6 +154,14 @@ function resetGame() {
 // --- Conexões Socket.IO ---
 io.on("connection", (socket) => {
   console.log("Novo jogador:", socket.id);
+
+// --- CHAT DOS JOGADORES ---
+socket.on("playerChat", (msg) => {
+  const player = players[socket.id];
+  if (!player || !player.alive) return; // morto não pode falar, se quiser permitir remova esta linha
+  io.emit("chatMessage", { name: player.displayName, text: msg });
+});
+
 
   // Registro/Login
   socket.on("register", ({ username, password }) => {

@@ -1,4 +1,8 @@
 const socket = io();
+const chatInput = document.getElementById("chatInput");
+const sendChat = document.getElementById("sendChat");
+const chatMessages = document.getElementById("chatMessages");
+
 let playerId = null;
 let currentTurn = null;
 let classesData = {}; // dados do servidor
@@ -11,6 +15,25 @@ const classEmojis = {
   "Vampiro": "🧛‍♂️",
   "Bruxa": "🧙‍♀️"
 };
+
+sendChat.addEventListener("click", () => {
+  const msg = chatInput.value.trim();
+  if (msg !== "") {
+    socket.emit("playerChat", msg);
+    chatInput.value = "";
+  }
+});
+
+chatInput.addEventListener("keypress", e => {
+  if (e.key === "Enter") sendChat.click();
+});
+
+socket.on("chatMessage", (data) => {
+  const div = document.createElement("div");
+  div.innerHTML = `<b style="color:cyan;">${data.name}:</b> ${data.text}`;
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+});
 
 // -------------------- LOGIN/REGISTRO --------------------
 document.getElementById("btnRegister").onclick = () => {

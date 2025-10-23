@@ -61,6 +61,17 @@ footer { background:#1a1a1a; color:#777; font-size:0.9em; padding:8px; border-to
 <div id="classDetails"></div>
 </div>
 
+
+
+<!-- === CHAT DOS JOGADORES === -->
+<div id="chatBox" style="margin-top:15px; border:1px solid #555; padding:10px; border-radius:8px; background:#1e1e1e;">
+  <h3 style="margin-bottom:8px;">💬 Chat dos Jogadores</h3>
+  <div id="chatMessages" style="height:150px; overflow-y:auto; background:#111; padding:5px; border-radius:5px; margin-bottom:5px;"></div>
+  <input id="chatInput" type="text" placeholder="Digite sua mensagem..." style="width:75%; padding:5px; border-radius:5px; border:none; outline:none; background:#222; color:#ddd;">
+  <button id="sendChat" style="padding:5px 10px; background:#444; color:#fff; border:none; border-radius:5px; cursor:pointer;">Enviar</button>
+</div>
+
+
 <footer>Feito por Caio ⚡</footer>
 
 <script src="/socket.io/socket.io.js"></script>
