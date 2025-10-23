@@ -38,6 +38,15 @@ socket.on("updatePlayers", (players) => {
 
 socket.on("turnChanged", (turnId) => {
   currentTurn = turnId;
+
+  // Atualiza buffs: diminui 1 rodada de cada buff
+  for (const id in playersData) {
+    const p = playersData[id];
+    if (p.buffs) {
+      p.buffs = p.buffs.map(b => ({ ...b, remaining: b.remaining - 1 })).filter(b => b.remaining > 0);
+    }
+  }
+
   renderPlayers();
   renderTurnIndicator();
 });
@@ -65,8 +74,22 @@ function renderPlayers() {
       background: ${id === currentTurn ? "rgba(255,255,255,0.1)" : "none"};
       border-radius: 8px; padding: 6px; margin: 4px;
     `;
+
+    // Buff ativo
+    let buffsText = "";
+    if (p.buffs && p.buffs.length > 0) {
+      buffsText = p.buffs.map(b => {
+        if (b.type === "lobisomem") return `🐺(${b.remaining})`;
+        if (b.type === "vampiro") return `🧛‍♂️(${b.remaining})`;
+        if (b.type === "bruxa") return `🧙‍♀️(${b.remaining})`;
+        return "";
+      }).join(" ");
+      buffsText = `<div style="text-align:center; color:gold; font-size:0.9em;">${buffsText}</div>`;
+    }
+
     container.innerHTML += `
       <div style="${style}">
+        ${buffsText}
         ${turnPointer}${emoji} <b>${p.name}</b> (${p.classe || "??"}) - ❤️ ${p.hp}
       </div>
     `;
