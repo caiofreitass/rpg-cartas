@@ -1,0 +1,10 @@
+body {
+  font-family: sans-serif;
+  text-align: center;
+}
+
+#hand button {
+  margin: 5px;
+  padding: 5px;
+  cursor: pointer;
+}
