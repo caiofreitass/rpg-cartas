@@ -1,11 +1,7 @@
 const socket = io();
 
-// Elementos da tela
 const playersDiv = document.getElementById("players");
 const abilitiesDiv = document.getElementById("abilities");
-const messagesDiv = document.getElementById("messages");
-const chatInput = document.getElementById("chatInput");
-const chatBtn = document.getElementById("chatBtn");
 const restartBtn = document.getElementById("restartBtn");
 const restartDiv = document.getElementById("restartVotes");
 
@@ -13,12 +9,21 @@ let playerId;
 let currentTurn;
 let targetId = null;
 let classesData = {};
+let playersData = {};
 
 // Inicialização
 socket.on("init", ({ id, players, currentTurn: ct }) => {
   playerId = id;
   currentTurn = ct;
+  playersData = players;
   renderPlayers(players);
+
+  // Solicita nome do jogador
+  let nome = "";
+  while(!nome.trim()){
+    nome = prompt("Digite seu nome de jogador:");
+  }
+  socket.emit("setName", nome);
 });
 
 // Recebe classes do servidor
@@ -38,7 +43,7 @@ socket.on("chooseClass", (classes) => {
 
 // Atualização de jogadores
 socket.on("updatePlayers", (players) => {
-  window.players = players;
+  playersData = players;
   renderPlayers(players);
 });
 
@@ -48,14 +53,6 @@ socket.on("turnChanged", (id) => {
   renderPlayersDivHighlight();
 });
 
-// Mensagens do jogo
-socket.on("message", (msg) => {
-  const p = document.createElement("p");
-  p.textContent = msg;
-  messagesDiv.appendChild(p);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
-});
-
 // Votos para reiniciar
 socket.on("restartVotes", ({ votes, totalPlayers }) => {
   restartDiv.textContent = `${votes}/${totalPlayers} jogadores prontos para reiniciar`;
@@ -63,20 +60,9 @@ socket.on("restartVotes", ({ votes, totalPlayers }) => {
 
 // Partida reiniciada
 socket.on("gameRestarted", () => {
-  messagesDiv.innerHTML = "";
   targetId = null;
   restartDiv.textContent = "";
-});
-
-// Botão de chat
-chatBtn.addEventListener("click", () => {
-  const msg = chatInput.value.trim();
-  if (!msg) return;
-  const p = document.createElement("p");
-  p.textContent = `Você: ${msg}`;
-  messagesDiv.appendChild(p);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
-  chatInput.value = "";
+  renderPlayers(playersData);
 });
 
 // Botão de reiniciar
@@ -87,24 +73,30 @@ restartBtn.addEventListener("click", () => {
 // Renderiza jogadores
 function renderPlayers(players) {
   playersDiv.innerHTML = "";
+  const targetSelect = document.createElement("select");
+  targetSelect.id = "targetSelect";
+
   for (let id in players) {
     const p = players[id];
     const div = document.createElement("div");
     div.className = "player";
     if(!p.alive) div.classList.add("dead");
     div.innerHTML = `<strong>${p.name}</strong> (${p.classe || "?"})<br>HP: ${p.hp}`;
-    
-    // Permitir escolher alvo clicando
-    if(id !== playerId && p.alive) {
-      div.style.cursor = "pointer";
-      div.onclick = () => {
-        targetId = id;
-        renderPlayersDivHighlight();
-      };
-    }
-    if(targetId === id) div.style.border = "2px solid red";
+
     playersDiv.appendChild(div);
+
+    // Preenche select apenas com inimigos vivos
+    if(id !== playerId && p.alive){
+      const option = document.createElement("option");
+      option.value = id;
+      option.textContent = p.name;
+      targetSelect.appendChild(option);
+    }
   }
+
+  playersDiv.appendChild(document.createElement("hr"));
+  playersDiv.appendChild(targetSelect);
+
   renderAbilities();
   renderPlayersDivHighlight();
 }
@@ -114,30 +106,30 @@ function renderPlayersDivHighlight() {
   const children = playersDiv.children;
   for(let div of children){
     div.style.background = "";
+  }
+  const playerDivs = Array.from(children).filter(d=>d.className==="player");
+  playerDivs.forEach(div=>{
     if(div.textContent.includes(currentTurn)){
       div.style.background = "lightyellow";
     }
-    if(div.textContent.includes(playerId) && currentTurn===playerId){
-      div.style.background = "#c8ffc8";
-    }
-  }
+  });
 }
 
 // Renderiza habilidades
 function renderAbilities() {
   abilitiesDiv.innerHTML = "";
-  if(!window.players || !classesData) return;
-  const player = window.players[playerId];
-  if(!player || !player.classe) return;
+  if(!playersData[playerId] || !playersData[playerId].classe || !classesData) return;
+  const player = playersData[playerId];
   const abilities = classesData[player.classe] || [];
+  const targetSelect = document.getElementById("targetSelect");
 
   abilities.forEach((ab, i)=>{
     const btn = document.createElement("button");
     btn.textContent = `${ab.name} (${ab.type}${ab.type==="atk"||ab.type==="heal"?" "+ab.value:""})`;
-    btn.disabled = currentTurn !== playerId || (!targetId && ab.type==="atk");
+    btn.disabled = currentTurn !== playerId || (ab.type==="atk" && targetSelect.options.length===0);
     btn.onclick = () => {
-      socket.emit("playAbility", { targetId, abilityIndex: i+1 });
-      targetId = null;
+      const selectedTarget = targetSelect.value;
+      socket.emit("playAbility", { targetId: selectedTarget, abilityIndex: i+1 });
     };
     abilitiesDiv.appendChild(btn);
   });
