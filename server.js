@@ -42,6 +42,7 @@ let players = {};
 let turnOrder = [];
 let currentTurnIndex = 0;
 let restartVotes = {};
+let hunter = null;
 
 const classEmojis = {
   "Lobisomem": "🐺",
@@ -68,7 +69,7 @@ const classes = {
     { name: "Bola de Fogo", type: "atk", value: 6 },
     { name: "Raio Congelante", type: "atk", value: 5 },
     { name: "Maldição", type: "buff", value: 0 },
-    { name: "Poção Curativa", type: "heal", value: 10 },
+    { name: "Poção Curativa", type: "heal", value: 8 },
     { name: "Espinho Venenoso", type: "atk", value: 7 }
   ]
 };
@@ -77,10 +78,45 @@ const initialHP = { "Lobisomem": 70, "Vampiro": 60, "Bruxa": 50 };
 
 function nextTurn() {
   if (turnOrder.length === 0) return;
+
+  // --- Verifica se deve gerar o caçador ---
+  if (!hunter && Math.random() < 0.3) { // 30% de chance
+    hunter = { id: "hunter", name: "Caçador", displayName: "🗡️ Caçador", hp: 24, alive: true };
+    turnOrder.push("hunter");
+    players["hunter"] = hunter;
+    io.emit("message", `<span style="color:purple;">🗡️ Um Caçador apareceu no campo de batalha!</span>`);
+    io.emit("updatePlayers", players);
+  }
+
   do {
     currentTurnIndex = (currentTurnIndex + 1) % turnOrder.length;
   } while (!players[turnOrder[currentTurnIndex]]?.alive);
-  io.emit("turnChanged", turnOrder[currentTurnIndex]);
+
+  const currentId = turnOrder[currentTurnIndex];
+  io.emit("turnChanged", currentId);
+
+  // --- Se for a vez do caçador ---
+  if (currentId === "hunter" && hunter && hunter.alive) {
+    const alivePlayers = Object.values(players).filter(p => p.alive && p.id !== "hunter");
+    if (alivePlayers.length > 0) {
+      const target = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
+      const damage = Math.floor(Math.random() * 10) + 1; // Dano entre 1 e 10
+      target.hp -= damage;
+      let msg = "";
+      if (target.hp <= 0) {
+        target.hp = 0;
+        target.alive = false;
+        msg = `💀 ${target.displayName} foi morto pelo Caçador!`;
+      } else {
+        msg = `🗡️ Caçador atacou ${target.displayName}, causando ${damage} de dano!`;
+      }
+      io.emit("message", `<span style="color:red;">${msg}</span>`);
+      io.emit("updatePlayers", players);
+    }
+    return nextTurn(); // passa para o próximo turno
+  }
+
+  // Atualiza buffs dos jogadores
   for (const id in players) {
     const p = players[id];
     if (!p.buffs) continue;
