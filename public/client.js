@@ -85,7 +85,9 @@ function renderPlayers() {
 
   for (const id in playersData) {
     const p = playersData[id];
-    const emoji = classEmojis[p.classe] || "❔";
+
+    // Emoji correto do Caçador
+    const emoji = p.id === "hunter" ? "🗡️" : classEmojis[p.classe] || "❔";
     const turnPointer = id === currentTurn ? "👉 " : "";
     const style = `
       color: ${p.alive ? "#fff" : "#777"};
@@ -93,7 +95,7 @@ function renderPlayers() {
       border-radius: 8px; padding: 6px; margin: 4px; min-width: 120px;
     `;
 
-    // Monta os buffs com emoji e rodadas restantes
+    // Buffs
     let buffsText = "";
     if (p.buffs && p.buffs.length > 0) {
       buffsText = p.buffs.map(b => {
@@ -107,10 +109,13 @@ function renderPlayers() {
       buffsText = `<div style="text-align:center; color:gold; font-size:0.9em; margin-bottom:3px;">${buffsText}</div>`;
     }
 
+    // Nome do Caçador
+    const classeDisplay = p.classe || (p.id === "hunter" ? "Caçador" : "??");
+
     container.innerHTML += `
       <div style="${style}">
         ${buffsText}
-        ${turnPointer}${emoji} <b>${p.name}</b> (${p.classe || "??"}) - ❤️ ${p.hp}
+        ${turnPointer}${emoji} <b>${p.name}</b> (${classeDisplay}) - ❤️ ${p.hp}
       </div>
     `;
   }

@@ -44,12 +44,7 @@ let currentTurnIndex = 0;
 let restartVotes = {};
 let hunter = null;
 
-const classEmojis = {
-  "Lobisomem": "🐺",
-  "Vampiro": "🧛‍♂️",
-  "Bruxa": "🧙‍♀️"
-};
-
+const classEmojis = { "Lobisomem": "🐺", "Vampiro": "🧛‍♂️", "Bruxa": "🧙‍♀️" };
 const classes = {
   "Lobisomem": [
     { name: "Ataque Selvagem", type: "atk", value: 8 },
@@ -73,14 +68,25 @@ const classes = {
     { name: "Espinho Venenoso", type: "atk", value: 7 }
   ]
 };
-
 const initialHP = { "Lobisomem": 70, "Vampiro": 60, "Bruxa": 50 };
 
+// --- Função para remover Caçador ---
+function removeHunter() {
+  if (hunter) {
+    delete players["hunter"];
+    turnOrder = turnOrder.filter(id => id !== "hunter");
+    io.emit("message", `<span style="color:red;">💀 O Caçador foi removido do campo de batalha!</span>`);
+    io.emit("updatePlayers", players);
+    hunter = null;
+  }
+}
+
+// --- Função de turno ---
 function nextTurn() {
   if (turnOrder.length === 0) return;
 
-  // --- Verifica se deve gerar o caçador ---
-  if (!hunter && Math.random() < 0.3) { // 30% de chance
+  const hunterAlive = hunter?.alive;
+  if (!hunterAlive && Math.random() < 0.3) { // 30% chance
     hunter = { id: "hunter", name: "Caçador", displayName: "🗡️ Caçador", hp: 24, alive: true };
     turnOrder.push("hunter");
     players["hunter"] = hunter;
@@ -95,13 +101,14 @@ function nextTurn() {
   const currentId = turnOrder[currentTurnIndex];
   io.emit("turnChanged", currentId);
 
-  // --- Se for a vez do caçador ---
-  if (currentId === "hunter" && hunter && hunter.alive) {
+  // Turno do Caçador
+  if (currentId === "hunter" && hunter?.alive) {
     const alivePlayers = Object.values(players).filter(p => p.alive && p.id !== "hunter");
     if (alivePlayers.length > 0) {
       const target = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
-      const damage = Math.floor(Math.random() * 10) + 1; // Dano entre 1 e 10
+      const damage = Math.floor(Math.random() * 10) + 1;
       target.hp -= damage;
+
       let msg = "";
       if (target.hp <= 0) {
         target.hp = 0;
@@ -113,7 +120,10 @@ function nextTurn() {
       io.emit("message", `<span style="color:red;">${msg}</span>`);
       io.emit("updatePlayers", players);
     }
-    return nextTurn(); // passa para o próximo turno
+
+    if (hunter.hp <= 0) removeHunter();
+
+    return nextTurn();
   }
 
   // Atualiza buffs dos jogadores
@@ -124,18 +134,24 @@ function nextTurn() {
   }
 }
 
+// --- Reinício de jogo ---
 function resetGame() {
+  removeHunter();
+
   for (let id in players) {
     const p = players[id];
     if (p.classe) { p.hp = initialHP[p.classe]; p.alive = true; p.buffs = []; }
   }
+
   currentTurnIndex = 0;
   restartVotes = {};
+
   io.emit("updatePlayers", players);
   io.emit("gameRestarted");
-  io.emit("turnChanged", turnOrder[currentTurnIndex]);
+  if (turnOrder.length > 0) io.emit("turnChanged", turnOrder[currentTurnIndex]);
 }
 
+// --- Conexões Socket.IO ---
 io.on("connection", (socket) => {
   console.log("Novo jogador:", socket.id);
 
@@ -177,7 +193,7 @@ io.on("connection", (socket) => {
     io.emit("updatePlayers", players);
   });
 
-  // === SISTEMA DE HABILIDADES COM CORREÇÃO ===
+  // --- Habilidades ---
   socket.on("playAbility", ({ targetId, abilityIndex }) => {
     const player = players[socket.id];
     if (!player.alive) return;
@@ -191,84 +207,25 @@ io.on("connection", (socket) => {
     let color = "white";
     let message = "";
 
-    // Buffs
     if (ability.type === "buff") {
-      let buffType = "";
-      if (player.classe === "Lobisomem" && ability.name === "Uivo Assustador") buffType = "absorbDamage";
-      else if (player.classe === "Vampiro" && ability.name === "Encanto") buffType = "reduceDamage";
-      else if (player.classe === "Bruxa" && ability.name === "Maldição") buffType = "curseReflect";
-      else if (player.classe === "Vampiro" && ability.name === "Suga Vida") buffType = "lifeSteal";
-
-      if (buffType) {
-        player.buffs.push({ type: buffType, remaining: 3, value: 0 });
-        message = `${player.displayName} usou ${ability.name} e ativou um efeito especial por 3 turnos!`;
-        color = "gold";
-      } else {
-        player.buffs.push({ type: player.classe.toLowerCase(), remaining: 3 });
-        message = `${player.displayName} usou ${ability.name}!`;
-        color = "gold";
-      }
-    }
-
-    // Cura direta
-    else if (ability.type === "heal") {
+      player.buffs.push({ type: ability.name.toLowerCase().replace(/\s/g,""), remaining: 3 });
+      message = `${player.displayName} usou ${ability.name}!`;
+      color = "gold";
+    } else if (ability.type === "heal") {
       player.hp += ability.value;
       message = `${player.displayName} usou ${ability.name} e recuperou ${ability.value} HP!`;
       color = "lime";
-    }
-
-    // Ataque
-    else if (ability.type === "atk") {
-      let damage = ability.value;
-
-      // Buff Lobisomem: libera fúria acumulada
-      const absorbBuff = player.buffs?.find(b => b.type === "absorbDamage");
-      if (absorbBuff && absorbBuff.value > 0) {
-        damage += absorbBuff.value;
-        io.emit("message", `<span style="color:orange;">🔥 ${player.displayName} liberou ${absorbBuff.value} de fúria acumulada!</span>`);
-        absorbBuff.value = 0;
-      }
-
-      // Redução de dano do Vampiro
-      const reduceBuff = target.buffs?.find(b => b.type === "reduceDamage");
-      if (reduceBuff) damage = Math.floor(damage / 2);
-
-      // Dano no alvo
-      target.hp -= damage;
-
-      // Acumula dano no Lobisomem se for alvo
-      const targetAbsorb = target.buffs?.find(b => b.type === "absorbDamage");
-      if (targetAbsorb) {
-        targetAbsorb.value += damage;
-        io.emit("message", `<span style="color:orange;">${target.displayName} absorveu ${damage} de dano para liberar depois!</span>`);
-      }
-
-      // Reflexo Bruxa
-      const reflectBuff = target.buffs?.find(b => b.type === "curseReflect");
-      if (reflectBuff) {
-        const reflected = Math.floor(damage / 2);
-        player.hp -= reflected;
-        io.emit("message", `<span style="color:violet;">${target.displayName} refletiu ${reflected} de dano com a Maldição!</span>`);
-      }
-
-      // LifeSteal do Vampiro
-      [player, target].forEach(p => {
-        const lifeSteal = p.buffs?.find(b => b.type === "lifeSteal");
-        if (lifeSteal) {
-          const healAmount = Math.floor(damage / 3 + Math.random() * (2 * damage / 3));
-          p.hp += healAmount;
-          io.emit("message", `<span style="color:crimson;">${p.displayName} drenou ${healAmount} de vida com Suga Vida!</span>`);
-        }
-      });
-
-      // Morte do alvo
+    } else if (ability.type === "atk") {
+      target.hp -= ability.value;
       if (target.hp <= 0) {
         target.hp = 0;
         target.alive = false;
         message = `💀 ${target.displayName} foi derrotado!`;
         color = "red";
+
+        if (target.id === "hunter") removeHunter();
       } else {
-        message += `${player.displayName} atacou ${target.displayName} com ${ability.name}, causando ${damage} de dano!`;
+        message = `${player.displayName} atacou ${target.displayName} com ${ability.name}, causando ${ability.value} de dano!`;
       }
     }
 
@@ -277,16 +234,17 @@ io.on("connection", (socket) => {
     nextTurn();
   });
 
-  // Votos de reinício
+  // --- Votos de reinício ---
   socket.on("restartVote", () => {
+    if (socket.id === "hunter") return; // Caçador não vota
     restartVotes[socket.id] = true;
-    const totalPlayers = Object.keys(players).length;
+    const totalPlayers = Object.keys(players).filter(id => id !== "hunter").length;
     const votes = Object.keys(restartVotes).length;
     io.emit("restartVotes", { votes, totalPlayers });
     if (votes === totalPlayers) resetGame();
   });
 
-  // Disconnect
+  // --- Disconnect ---
   socket.on("disconnect", () => {
     delete players[socket.id];
     turnOrder = turnOrder.filter(id => id !== socket.id);
