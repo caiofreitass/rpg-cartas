@@ -1,124 +1,99 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>RPG de Lobisomem, Vampiro e Bruxa</title>
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="client.js" defer></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RPG de Cartas</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #222;
-      color: #fff;
+      background-color: #121212;
+      color: #ddd;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      padding: 20px;
+      justify-content: space-between;
     }
+
+    h1 {
+      color: #ffcc00;
+      margin-top: 20px;
+      text-shadow: 0 0 10px #ffcc00;
+    }
+
+    #turnInfo {
+      margin: 10px auto;
+      font-size: 1.2em;
+      color: #00bfff;
+    }
+
     #players {
       display: flex;
-      flex-direction: column;
-      margin-bottom: 20px;
-      width: 300px;
-    }
-    .player {
-      border: 1px solid #555;
-      padding: 5px;
-      margin: 4px 0;
-      border-radius: 5px;
-      background: #333;
-      text-align: center;
-      position: relative;
-      transition: background 0.2s ease;
-    }
-    .player.dead {
-      background: #550000;
-      text-decoration: line-through;
-      opacity: 0.6;
-    }
-    .turn-indicator {
-      position: absolute;
-      left: -22px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 18px;
-    }
-    .player.active {
-      background: #fffa8a;
-      color: #111;
-      font-weight: bold;
-      border-color: #fff176;
-    }
-    select {
-      padding: 5px;
-      margin: 5px 0;
-      width: 100%;
-      border-radius: 5px;
-      border: 1px solid #555;
-      background: #444;
-      color: #fff;
-    }
-    #abilities, #targetSelect {
-      width: 300px;
-      margin-bottom: 10px;
-    }
-    #restartBtn {
-      padding: 5px 10px;
-      border-radius: 5px;
-      border: none;
-      background: #555;
-      color: #fff;
-      cursor: pointer;
-    }
-    #restartBtn:hover {
-      background: #777;
-    }
-    #restartVotes {
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
       margin-top: 10px;
     }
-    #console {
-      width: 320px;
-      height: 160px;
-      background: #111;
+
+    #actions {
+      margin: 15px auto;
+    }
+
+    select, button {
+      background: #1e1e1e;
+      color: #fff;
       border: 1px solid #555;
-      border-radius: 5px;
-      margin-top: 20px;
+      border-radius: 6px;
+      padding: 5px 10px;
+      margin: 4px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover, select:hover {
+      background: #2a2a2a;
+      border-color: #888;
+    }
+
+    #log {
+      background: #0e0e0e;
+      height: 230px;
       overflow-y: auto;
-      padding: 5px;
-      font-size: 14px;
+      border-top: 2px solid #333;
+      padding: 10px;
+      text-align: left;
+      font-size: 0.95em;
     }
-    .log {
-      margin: 2px 0;
+
+    #log div {
+      margin: 3px 0;
+      line-height: 1.4em;
     }
-    .atk {
-      color: #ff4d4d;
-    }
-    .heal {
-      color: #4dff4d;
-    }
-    .buff {
-      color: #ffd24d;
-    }
-    .death {
-      color: #ff8888;
-      font-style: italic;
+
+    footer {
+      background: #1a1a1a;
+      color: #777;
+      font-size: 0.9em;
+      padding: 8px;
+      border-top: 1px solid #333;
     }
   </style>
 </head>
 <body>
-  <h1>RPG de Lobisomem, Vampiro e Bruxa</h1>
+  <h1>🃏 RPG de Cartas</h1>
 
+  <div id="turnInfo">Aguardando jogadores...</div>
   <div id="players"></div>
+  <div id="actions"></div>
 
-  <label for="targetSelect">🎯 Escolha seu alvo:</label>
-  <select id="targetSelect"></select>
+  <div id="log"></div>
 
-  <label for="abilitySelect">✨ Escolha sua habilidade:</label>
-  <select id="abilitySelect"></select>
+  <footer>Feito por Caio ⚡</footer>
 
-  <button id="restartBtn">Reiniciar partida</button>
-  <div id="restartVotes"></div>
-
-  <div id="console"></div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="client.js"></script>
 </body>
 </html>
