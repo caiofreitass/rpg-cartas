@@ -128,35 +128,8 @@
   <div id="log"></div>
   <footer>Feito por Caio ⚡</footer>
 
+  <!-- Socket.io e client.js -->
   <script src="/socket.io/socket.io.js"></script>
   <script src="client.js"></script>
-  <script>
-    const socket = io();
-
-    // Botões de login/registro
-    document.getElementById("btnRegister").onclick = () => {
-      const u = document.getElementById("username").value;
-      const p = document.getElementById("password").value;
-      socket.emit("register", { username: u, password: p });
-    };
-    document.getElementById("btnLogin").onclick = () => {
-      const u = document.getElementById("username").value;
-      const p = document.getElementById("password").value;
-      socket.emit("login", { username: u, password: p });
-    };
-
-    socket.on("registerResponse", r => {
-      const msg = document.getElementById("loginMsg");
-      msg.style.color = r.success ? "#00ff00" : "#ff5555";
-      msg.innerText = r.message;
-    });
-
-    socket.on("loginResponse", r => {
-      const msg = document.getElementById("loginMsg");
-      msg.style.color = r.success ? "#00ff00" : "#ff5555";
-      msg.innerText = r.message;
-      if(r.success) document.getElementById("loginPanel").style.display="none";
-    });
-  </script>
 </body>
 </html>

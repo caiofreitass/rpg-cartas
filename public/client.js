@@ -13,6 +13,26 @@ const classEmojis = {
 };
 
 // -------------------- LOGIN --------------------
+document.getElementById("btnRegister").onclick = () => {
+  const u = document.getElementById("username").value;
+  const p = document.getElementById("password").value;
+  if (!u || !p) return alert("Preencha usuário e senha");
+  socket.emit("register", { username: u, password: p });
+};
+
+document.getElementById("btnLogin").onclick = () => {
+  const u = document.getElementById("username").value;
+  const p = document.getElementById("password").value;
+  if (!u || !p) return alert("Preencha usuário e senha");
+  socket.emit("login", { username: u, password: p });
+};
+
+socket.on("registerResponse", r => {
+  const msg = document.getElementById("loginMsg");
+  msg.style.color = r.success ? "#00ff00" : "#ff5555";
+  msg.innerText = r.message;
+});
+
 socket.on("loginResponse", r => {
   const msg = document.getElementById("loginMsg");
   msg.style.color = r.success ? "#00ff00" : "#ff5555";
@@ -26,7 +46,7 @@ socket.on("loginResponse", r => {
     const username = document.getElementById("username").value;
     socket.emit("setName", username);
 
-    // Escolhe classe aleatória no login (ou você pode criar um seletor depois)
+    // Escolhe classe aleatória
     const validClasses = Object.keys(classesData);
     const chosen = validClasses[Math.floor(Math.random() * validClasses.length)];
     socket.emit("setClass", chosen);
@@ -53,7 +73,7 @@ socket.on("updatePlayers", (players) => {
 socket.on("turnChanged", (turnId) => {
   currentTurn = turnId;
 
-  // Atualiza buffs: diminui 1 rodada de cada buff
+  // Atualiza buffs
   for (const id in playersData) {
     const p = playersData[id];
     if (p.buffs) {
@@ -66,14 +86,8 @@ socket.on("turnChanged", (turnId) => {
 });
 
 socket.on("message", (msg) => addMessage(msg));
-
-socket.on("restartVotes", ({ votes, totalPlayers }) => {
-  addMessage(`🌀 Reinício: ${votes}/${totalPlayers} votos.`);
-});
-
-socket.on("gameRestarted", () => {
-  addMessage("♻️ O jogo foi reiniciado!");
-});
+socket.on("restartVotes", ({ votes, totalPlayers }) => addMessage(`🌀 Reinício: ${votes}/${totalPlayers} votos.`));
+socket.on("gameRestarted", () => addMessage("♻️ O jogo foi reiniciado!"));
 
 // -------------------- RENDER --------------------
 function renderPlayers() {
@@ -90,7 +104,6 @@ function renderPlayers() {
       border-radius: 8px; padding: 6px; margin: 4px;
     `;
 
-    // Buff ativo
     let buffsText = "";
     if (p.buffs && p.buffs.length > 0) {
       buffsText = p.buffs.map(b => {
@@ -120,7 +133,7 @@ function renderTurnIndicator() {
 }
 
 function renderActions() {
-  if (!loggedIn) return; // não mostra ações se não logado
+  if (!loggedIn) return;
 
   const container = document.getElementById("actions");
   container.innerHTML = "";
@@ -134,10 +147,7 @@ function renderActions() {
   abilitySelect.id = "abilitySelect";
   abilitySelect.style.marginRight = "8px";
   abilitySelect.style.padding = "4px";
-
-  classesData[me.classe].forEach((a, i) => {
-    abilitySelect.innerHTML += `<option value="${i + 1}">${a.name}</option>`;
-  });
+  classesData[me.classe].forEach((a, i) => abilitySelect.innerHTML += `<option value="${i + 1}">${a.name}</option>`);
 
   const targetSelect = document.createElement("select");
   targetSelect.id = "targetSelect";
@@ -185,13 +195,6 @@ function renderActions() {
 function addMessage(msg) {
   const log = document.getElementById("log");
   const entry = document.createElement("div");
-
-  if (msg.includes("causando")) entry.style.color = "red";
-  else if (msg.includes("recuperou")) entry.style.color = "lightgreen";
-  else if (msg.includes("fortaleceu")) entry.style.color = "gold";
-  else if (msg.includes("morreu")) entry.style.color = "#ff5555";
-  else entry.style.color = "#ccc";
-
   entry.innerHTML = msg;
   log.appendChild(entry);
   log.scrollTop = log.scrollHeight;
