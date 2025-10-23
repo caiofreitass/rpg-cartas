@@ -61,7 +61,7 @@ function renderPlayers() {
     const emoji = classEmojis[p.classe] || "❔";
     const turnPointer = id === currentTurn ? "👉 " : "";
     const style = `
-      color: ${p.alive ? (id === currentTurn ? "#fff" : "#ccc") : "#777"};
+      color: ${p.alive ? "#fff" : "#777"};
       background: ${id === currentTurn ? "rgba(255,255,255,0.1)" : "none"};
       border-radius: 8px; padding: 6px; margin: 4px;
     `;
@@ -141,7 +141,7 @@ function renderActions() {
   container.appendChild(restartBtn);
 }
 
-// Mensagens coloridas
+// Mensagens coloridas e emojis
 function addMessage(msg) {
   const log = document.getElementById("log");
   const entry = document.createElement("div");
@@ -152,7 +152,8 @@ function addMessage(msg) {
   else if (msg.includes("morreu")) entry.style.color = "#ff5555"; // morte
   else entry.style.color = "#ccc";
 
-  entry.textContent = msg;
+  // Renderiza HTML corretamente
+  entry.innerHTML = msg;
   log.appendChild(entry);
   log.scrollTop = log.scrollHeight;
 }
