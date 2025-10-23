@@ -1,139 +1,137 @@
 const socket = io();
-
-let myId = null;
+let playerId = null;
 let currentTurn = null;
 let classesData = {};
-let selectedClass = null;
+let selectedTarget = null;
 
-const playersDiv = document.getElementById("players");
-const turnDiv = document.getElementById("turn");
-const classSelect = document.getElementById("classSelect");
-const abilitySelect = document.getElementById("abilitySelect");
-const targetSelect = document.getElementById("targetSelect");
-const actionButton = document.getElementById("actionButton");
-const restartButton = document.getElementById("restartButton");
-const logDiv = document.getElementById("log");
-const nameInput = document.getElementById("nameInput");
-const nameButton = document.getElementById("nameButton");
+// Emojis para classes
+const classEmojis = {
+  "Lobisomem": "🐺",
+  "Vampiro": "🧛‍♂️",
+  "Bruxa": "🧙‍♀️"
+};
 
-socket.on("init", (data) => {
-  myId = data.id;
-  updatePlayers(data.players);
-  currentTurn = data.currentTurn;
-});
-
+// Pergunta nome e classe
 socket.on("classesData", (data) => {
   classesData = data;
+  const name = prompt("Digite seu nome:");
+  socket.emit("setName", name);
+
+  const classe = prompt("Escolha sua classe: Lobisomem, Vampiro ou Bruxa");
+  if (["Lobisomem", "Vampiro", "Bruxa"].includes(classe)) {
+    socket.emit("setClass", classe);
+  } else {
+    alert("Classe inválida! Será atribuída aleatoriamente.");
+    const randomClass = ["Lobisomem", "Vampiro", "Bruxa"][Math.floor(Math.random() * 3)];
+    socket.emit("setClass", randomClass);
+  }
 });
 
-socket.on("chooseClass", (classes) => {
-  classSelect.innerHTML = "";
-  classes.forEach(c => {
-    const opt = document.createElement("option");
-    opt.value = c;
-    opt.textContent = c;
-    classSelect.appendChild(opt);
-  });
-  document.getElementById("classArea").style.display = "block";
+socket.on("init", (data) => {
+  playerId = data.id;
+  currentTurn = data.currentTurn;
+  renderPlayers(data.players);
 });
 
-document.getElementById("chooseClassBtn").onclick = () => {
-  const classe = classSelect.value;
-  socket.emit("setClass", classe);
-  document.getElementById("classArea").style.display = "none";
-};
-
-nameButton.onclick = () => {
-  const name = nameInput.value.trim();
-  if(name) socket.emit("setName", name);
-  document.getElementById("nameArea").style.display = "none";
-};
-
-socket.on("updatePlayers", (players) => {
-  updatePlayers(players);
-  updateTargets(players);
-});
+socket.on("updatePlayers", (players) => renderPlayers(players));
 
 socket.on("turnChanged", (turnId) => {
   currentTurn = turnId;
-  updateTurnDisplay();
+  renderTurnIndicator();
 });
 
-socket.on("message", (msg) => {
-  const p = document.createElement("p");
-  p.textContent = msg;
-  logDiv.appendChild(p);
-  logDiv.scrollTop = logDiv.scrollHeight;
-  console.log("📢 " + msg);
+socket.on("message", (msg) => addMessage(msg));
+
+socket.on("restartVotes", ({ votes, totalPlayers }) => {
+  addMessage(`🌀 Reinício: ${votes}/${totalPlayers} votos.`);
 });
 
 socket.on("gameRestarted", () => {
-  logDiv.innerHTML = "<p>🔄 O jogo foi reiniciado!</p>";
+  addMessage("♻️ O jogo foi reiniciado!");
 });
 
-socket.on("restartVotes", ({ votes, totalPlayers }) => {
-  logDiv.innerHTML += `<p>🗳️ Votos para reiniciar: ${votes}/${totalPlayers}</p>`;
-});
-
-function updatePlayers(players) {
-  playersDiv.innerHTML = "";
+function renderPlayers(players) {
+  const container = document.getElementById("players");
+  container.innerHTML = "";
   for (const id in players) {
     const p = players[id];
-    const div = document.createElement("div");
-    div.className = "player";
-    div.style.border = id === currentTurn ? "2px solid gold" : "1px solid gray";
-    div.style.background = p.alive ? "#222" : "#333";
-    div.style.color = p.alive ? "white" : "red";
-    div.innerHTML = `<strong>${p.name}</strong> (${p.classe || "?"})<br>❤️ ${p.hp}`;
-    playersDiv.appendChild(div);
+    const emoji = classEmojis[p.classe] || "❔";
+    const turnPointer = (id === currentTurn) ? "👉 " : "";
+    const style = `
+      color: ${p.alive ? (id === currentTurn ? "#fff" : "#ccc") : "#777"};
+      background: ${id === currentTurn ? "rgba(255,255,255,0.1)" : "none"};
+      border-radius: 8px; padding: 6px; margin: 4px;
+    `;
+    container.innerHTML += `
+      <div style="${style}">
+        ${turnPointer}${emoji} <b>${p.name}</b> (${p.classe || "??"}) - ❤️ ${p.hp}
+      </div>
+    `;
   }
+  renderActions(players);
 }
 
-function updateTargets(players) {
-  targetSelect.innerHTML = "";
+function renderTurnIndicator() {
+  const info = document.getElementById("turnInfo");
+  info.textContent = currentTurn === playerId ? "✨ É sua vez!" : "⏳ Aguardando...";
+}
+
+function renderActions(players) {
+  const me = players[playerId];
+  const container = document.getElementById("actions");
+  container.innerHTML = "";
+
+  if (!me || !me.classe || !me.alive) return;
+  if (currentTurn !== playerId) return;
+
+  const abilitySelect = document.createElement("select");
+  abilitySelect.id = "abilitySelect";
+  for (let i = 0; i < classesData[me.classe].length; i++) {
+    const a = classesData[me.classe][i];
+    abilitySelect.innerHTML += `<option value="${i + 1}">${a.name}</option>`;
+  }
+
+  const targetSelect = document.createElement("select");
+  targetSelect.id = "targetSelect";
   for (const id in players) {
-    if (id !== myId && players[id].alive) {
-      const opt = document.createElement("option");
-      opt.value = id;
-      opt.textContent = players[id].name;
-      targetSelect.appendChild(opt);
+    const p = players[id];
+    if (p.alive && id !== playerId) {
+      targetSelect.innerHTML += `<option value="${id}">${p.name}</option>`;
     }
   }
 
-  const me = Object.values(players).find(p => p.id === myId);
-  if(me && me.classe && classesData[me.classe]) {
-    abilitySelect.innerHTML = "";
-    classesData[me.classe].forEach((a, i) => {
-      const opt = document.createElement("option");
-      opt.value = i+1;
-      opt.textContent = `${a.name} (${a.type === "atk" ? "⚔️" : a.type === "heal" ? "💖" : "✨"})`;
-      abilitySelect.appendChild(opt);
-    });
-  }
+  const playBtn = document.createElement("button");
+  playBtn.textContent = "Usar Habilidade";
+  playBtn.onclick = () => {
+    const abilityIndex = parseInt(abilitySelect.value);
+    const targetId = targetSelect.value;
+    socket.emit("playAbility", { targetId, abilityIndex });
+  };
+
+  container.appendChild(document.createTextNode("Habilidade: "));
+  container.appendChild(abilitySelect);
+  container.appendChild(document.createTextNode("  Alvo: "));
+  container.appendChild(targetSelect);
+  container.appendChild(playBtn);
+
+  const restartBtn = document.createElement("button");
+  restartBtn.textContent = "🔄 Reiniciar";
+  restartBtn.onclick = () => socket.emit("restartVote");
+  container.appendChild(document.createElement("br"));
+  container.appendChild(restartBtn);
 }
 
-function updateTurnDisplay() {
-  const allPlayers = document.querySelectorAll(".player");
-  allPlayers.forEach(p => p.style.opacity = "1");
+// Mensagens com cor
+function addMessage(msg) {
+  const log = document.getElementById("log");
+  const entry = document.createElement("div");
 
-  if (currentTurn === myId) {
-    turnDiv.textContent = "👉 É sua vez!";
-  } else {
-    turnDiv.textContent = "⏳ Aguardando o turno de outro jogador...";
-  }
+  if (msg.includes("causando")) entry.style.color = "red"; // ataque
+  else if (msg.includes("recuperou")) entry.style.color = "lightgreen"; // cura
+  else if (msg.includes("fortaleceu")) entry.style.color = "gold"; // buff
+  else entry.style.color = "#ccc";
 
-  // Marcar o jogador da vez com emoji
-  const turnPlayer = [...allPlayers].find(div => div.innerHTML.includes(playersDiv.children.namedItem));
+  entry.innerHTML = msg;
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
 }
-
-actionButton.onclick = () => {
-  if (currentTurn !== myId) return alert("Não é sua vez!");
-  const targetId = targetSelect.value;
-  const abilityIndex = abilitySelect.value;
-  if (!targetId || !abilityIndex) return;
-  socket.emit("playAbility", { targetId, abilityIndex });
-};
-
-restartButton.onclick = () => {
-  socket.emit("restartVote");
-};
