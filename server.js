@@ -12,29 +12,35 @@ let players = {};
 let turnOrder = [];
 let currentTurnIndex = 0;
 
-// Classes e habilidades
+// Classes e habilidades balanceadas
 const classes = {
   "Lobisomem": [
-    { name: "Ataque Selvagem", type: "atk", value: 6 },
-    { name: "Garras Rasgantes", type: "atk", value: 5 },
-    { name: "Investida", type: "atk", value: 4 },
+    { name: "Ataque Selvagem", type: "atk", value: 8 },
+    { name: "Garras Rasgantes", type: "atk", value: 7 },
+    { name: "Investida", type: "atk", value: 6 },
     { name: "Uivo Assustador", type: "buff", value: 2 },
     { name: "Regeneração", type: "heal", value: 5 }
   ],
   "Vampiro": [
-    { name: "Suga Vida", type: "atk", value: 5 },
-    { name: "Investida Noturna", type: "atk", value: 6 },
+    { name: "Suga Vida", type: "atk", value: 9 },
+    { name: "Investida Noturna", type: "atk", value: 8 },
     { name: "Encanto", type: "buff", value: 2 },
     { name: "Mordida Vampírica", type: "atk", value: 7 },
-    { name: "Neblina Sombria", type: "heal", value: 4 }
+    { name: "Neblina Sombria", type: "heal", value: 6 }
   ],
   "Bruxa": [
     { name: "Bola de Fogo", type: "atk", value: 6 },
     { name: "Raio Congelante", type: "atk", value: 5 },
     { name: "Maldição", type: "buff", value: 2 },
-    { name: "Poção Curativa", type: "heal", value: 5 },
-    { name: "Espinho Venenoso", type: "atk", value: 4 }
+    { name: "Poção Curativa", type: "heal", value: 10 },
+    { name: "Espinho Venenoso", type: "atk", value: 7 }
   ]
+};
+
+const initialHP = {
+  "Lobisomem": 70,
+  "Vampiro": 60,
+  "Bruxa": 50
 };
 
 function nextTurn() {
@@ -52,19 +58,20 @@ io.on("connection", (socket) => {
     id: socket.id,
     name: "Jogador",
     classe: null,
-    hp: 20,
+    hp: 0, // será definido ao escolher classe
     alive: true
   };
   turnOrder.push(socket.id);
 
   socket.emit("init", { id: socket.id, players, currentTurn: turnOrder[currentTurnIndex] });
 
-  // Pergunta classe ao jogador
+  // Escolha de classe
   socket.emit("chooseClass", Object.keys(classes));
 
   socket.on("setClass", (classe) => {
     if(classes[classe]){
       players[socket.id].classe = classe;
+      players[socket.id].hp = initialHP[classe]; // define HP baseado na classe
       io.emit("updatePlayers", players);
     }
   });
@@ -99,7 +106,6 @@ io.on("connection", (socket) => {
       player.hp += ability.value;
       io.to(socket.id).emit("message", `Você usou ${ability.name} e recuperou ${ability.value} HP!`);
     } else if(ability.type === "buff"){
-      // Buff simples (pode ser expandido)
       io.to(socket.id).emit("message", `Você usou ${ability.name} e se fortaleceu!`);
     }
 
