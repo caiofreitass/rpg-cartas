@@ -58,7 +58,7 @@ const classes = {
     { name: "Regeneração", type: "heal", value: 5 }
   ],
   "Vampiro": [
-    { name: "Suga Vida", type: "atk", value: 9 },
+    { name: "Suga Vida", type: "buff", value: 0 },
     { name: "Investida Noturna", type: "atk", value: 8 },
     { name: "Encanto", type: "buff", value: 3 },
     { name: "Mordida Vampírica", type: "atk", value: 7 },
@@ -141,7 +141,7 @@ io.on("connection", (socket) => {
     io.emit("updatePlayers", players);
   });
 
-  // === NOVA VERSÃO DO SISTEMA DE HABILIDADES ===
+  // === SISTEMA DE HABILIDADES COM CORREÇÃO ===
   socket.on("playAbility", ({ targetId, abilityIndex }) => {
     const player = players[socket.id];
     if (!player.alive) return;
@@ -155,7 +155,7 @@ io.on("connection", (socket) => {
     let color = "white";
     let message = "";
 
-    // === Buffs ===
+    // Buffs
     if (ability.type === "buff") {
       let buffType = "";
       if (player.classe === "Lobisomem" && ability.name === "Uivo Assustador") buffType = "absorbDamage";
@@ -174,35 +174,40 @@ io.on("connection", (socket) => {
       }
     }
 
-    // === Cura ===
+    // Cura direta
     else if (ability.type === "heal") {
       player.hp += ability.value;
       message = `${player.displayName} usou ${ability.name} e recuperou ${ability.value} HP!`;
       color = "lime";
     }
 
-    // === Ataque ===
+    // Ataque
     else if (ability.type === "atk") {
       let damage = ability.value;
 
-      // Buff do Lobisomem: soma dano absorvido
+      // Buff Lobisomem: libera fúria acumulada
       const absorbBuff = player.buffs?.find(b => b.type === "absorbDamage");
       if (absorbBuff && absorbBuff.value > 0) {
         damage += absorbBuff.value;
+        io.emit("message", `<span style="color:orange;">🔥 ${player.displayName} liberou ${absorbBuff.value} de fúria acumulada!</span>`);
         absorbBuff.value = 0;
-        message += `🔥 A fúria acumulada aumentou o dano! `;
       }
 
       // Redução de dano do Vampiro
       const reduceBuff = target.buffs?.find(b => b.type === "reduceDamage");
-      if (reduceBuff) {
-        damage = Math.floor(damage / 2);
-      }
+      if (reduceBuff) damage = Math.floor(damage / 2);
 
       // Dano no alvo
       target.hp -= damage;
 
-      // Reflexo da Bruxa
+      // Acumula dano no Lobisomem se for alvo
+      const targetAbsorb = target.buffs?.find(b => b.type === "absorbDamage");
+      if (targetAbsorb) {
+        targetAbsorb.value += damage;
+        io.emit("message", `<span style="color:orange;">${target.displayName} absorveu ${damage} de dano para liberar depois!</span>`);
+      }
+
+      // Reflexo Bruxa
       const reflectBuff = target.buffs?.find(b => b.type === "curseReflect");
       if (reflectBuff) {
         const reflected = Math.floor(damage / 2);
@@ -210,19 +215,17 @@ io.on("connection", (socket) => {
         io.emit("message", `<span style="color:violet;">${target.displayName} refletiu ${reflected} de dano com a Maldição!</span>`);
       }
 
-      // Dano recebido ativa efeitos de buffs defensivos
-      if (target.buffs) {
-        target.buffs.forEach(b => {
-          if (b.type === "absorbDamage") b.value += damage; // Lobisomem acumula
-          if (b.type === "lifeSteal") {
-            const healAmount = Math.floor((damage / 3) + Math.random() * (damage / 3));
-            target.hp += healAmount;
-            io.emit("message", `<span style="color:crimson;">${target.displayName} drenou ${healAmount} de vida com Suga Vida!</span>`);
-          }
-        });
-      }
+      // LifeSteal do Vampiro
+      [player, target].forEach(p => {
+        const lifeSteal = p.buffs?.find(b => b.type === "lifeSteal");
+        if (lifeSteal) {
+          const healAmount = Math.floor(damage / 3 + Math.random() * (2 * damage / 3));
+          p.hp += healAmount;
+          io.emit("message", `<span style="color:crimson;">${p.displayName} drenou ${healAmount} de vida com Suga Vida!</span>`);
+        }
+      });
 
-      // Morte
+      // Morte do alvo
       if (target.hp <= 0) {
         target.hp = 0;
         target.alive = false;
@@ -238,6 +241,7 @@ io.on("connection", (socket) => {
     nextTurn();
   });
 
+  // Votos de reinício
   socket.on("restartVote", () => {
     restartVotes[socket.id] = true;
     const totalPlayers = Object.keys(players).length;
@@ -246,6 +250,7 @@ io.on("connection", (socket) => {
     if (votes === totalPlayers) resetGame();
   });
 
+  // Disconnect
   socket.on("disconnect", () => {
     delete players[socket.id];
     turnOrder = turnOrder.filter(id => id !== socket.id);

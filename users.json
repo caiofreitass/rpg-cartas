@@ -1,5 +1,8 @@
 {
   "caiorimador": {
     "password": "$2b$10$j98BgaUSpRMPzWCBsRBYpeUr6PL59BH2Y6ky3WhXINkYNCtlAoKem"
+  },
+  "teste": {
+    "password": "$2b$10$ej9yMUwM5XdRR0zrNIrJpOYNFeXC.uuC1.605iKHrkbE5DteRk55u"
   }
 }

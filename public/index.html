@@ -66,11 +66,38 @@ footer { background:#1a1a1a; color:#777; font-size:0.9em; padding:8px; border-to
 <script src="/socket.io/socket.io.js"></script>
 <script src="client.js"></script>
 <script>
-// variável separada para o guia
+// variável separada para o guia, corrigida
 const localClassesData = {
-"Lobisomem": { buffs:[{name:"Uivo Assustador", effect:"Absorve dano recebido e soma ao próximo ataque por 3 turnos."}], abilities:[{name:"Ataque Selvagem", type:"atk", value:8},{name:"Garras Rasgantes", type:"atk", value:7},{name:"Investida", type:"atk", value:6},{name:"Regeneração", type:"heal", value:5}] },
-"Vampiro": { buffs:[{name:"Encanto", effect:"Reduz dano recebido pela metade por 3 turnos."},{name:"Suga Vida", effect:"Drena vida sempre que causa ou recebe dano por 3 turnos."}], abilities:[{name:"Suga Vida", type:"atk", value:9},{name:"Investida Noturna", type:"atk", value:8},{name:"Mordida Vampírica", type:"atk", value:7},{name:"Neblina Sombria", type:"heal", value:6}] },
-"Bruxa": { buffs:[{name:"Maldição", effect:"Reflete metade do dano recebido por 3 turnos."}], abilities:[{name:"Bola de Fogo", type:"atk", value:6},{name:"Raio Congelante", type:"atk", value:5},{name:"Poção Curativa", type:"heal", value:10},{name:"Espinho Venenoso", type:"atk", value:7}] }
+"Lobisomem": {
+    buffs:[{name:"Uivo Assustador", effect:"Absorve dano recebido e soma ao próximo ataque por 3 turnos."}],
+    abilities:[
+        {name:"Ataque Selvagem", type:"atk", value:8},
+        {name:"Garras Rasgantes", type:"atk", value:7},
+        {name:"Investida", type:"atk", value:6},
+        {name:"Regeneração", type:"heal", value:5}
+    ]
+},
+"Vampiro": {
+    buffs:[
+        {name:"Encanto", effect:"Reduz dano recebido pela metade por 3 turnos."},
+        {name:"Suga Vida", effect:"Drena vida sempre que causa ou recebe dano por 3 turnos."}
+    ],
+    abilities:[
+        {name:"Suga Vida", type:"buff"},   // corrigido
+        {name:"Investida Noturna", type:"atk", value:8},
+        {name:"Mordida Vampírica", type:"atk", value:7},
+        {name:"Neblina Sombria", type:"heal", value:6}
+    ]
+},
+"Bruxa": {
+    buffs:[{name:"Maldição", effect:"Reflete metade do dano recebido por 3 turnos."}],
+    abilities:[
+        {name:"Bola de Fogo", type:"atk", value:6},
+        {name:"Raio Congelante", type:"atk", value:5},
+        {name:"Poção Curativa", type:"heal", value:10},
+        {name:"Espinho Venenoso", type:"atk", value:7}
+    ]
+}
 };
 
 const guideButton = document.getElementById("guideButton");

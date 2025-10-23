@@ -90,18 +90,21 @@ function renderPlayers() {
     const style = `
       color: ${p.alive ? "#fff" : "#777"};
       background: ${id === currentTurn ? "rgba(255,255,255,0.1)" : "none"};
-      border-radius: 8px; padding: 6px; margin: 4px;
+      border-radius: 8px; padding: 6px; margin: 4px; min-width: 120px;
     `;
 
+    // Monta os buffs com emoji e rodadas restantes
     let buffsText = "";
     if (p.buffs && p.buffs.length > 0) {
       buffsText = p.buffs.map(b => {
-        if (b.type === "lobisomem") return `🐺(${b.remaining})`;
-        if (b.type === "vampiro") return `🧛‍♂️(${b.remaining})`;
-        if (b.type === "bruxa") return `🧙‍♀️(${b.remaining})`;
-        return "";
+        let bEmoji = "";
+        if (b.type === "lobisomem") bEmoji = "🐺";
+        else if (b.type === "vampiro") bEmoji = "🧛‍♂️";
+        else if (b.type === "bruxa") bEmoji = "🧙‍♀️";
+        else if (b.type === "lifeSteal") bEmoji = "吸"; // Suga Vida
+        return `${bEmoji}(${b.remaining})`;
       }).join(" ");
-      buffsText = `<div style="text-align:center; color:gold; font-size:0.9em;">${buffsText}</div>`;
+      buffsText = `<div style="text-align:center; color:gold; font-size:0.9em; margin-bottom:3px;">${buffsText}</div>`;
     }
 
     container.innerHTML += `
@@ -129,54 +132,56 @@ function renderActions() {
 
   const me = playersData[playerId];
   if (!me || !me.classe || !me.alive) return;
-  if (currentTurn !== playerId) return;
-  if (!classesData[me.classe]) return;
 
-  const abilitySelect = document.createElement("select");
-  abilitySelect.id = "abilitySelect";
-  abilitySelect.style.marginRight = "8px";
-  abilitySelect.style.padding = "4px";
-  classesData[me.classe].forEach((a, i) => abilitySelect.innerHTML += `<option value="${i + 1}">${a.name}</option>`);
+  // Só criamos as ações de ataque se for a sua vez
+  if (currentTurn === playerId && classesData[me.classe]) {
+    const abilitySelect = document.createElement("select");
+    abilitySelect.id = "abilitySelect";
+    abilitySelect.style.marginRight = "8px";
+    abilitySelect.style.padding = "4px";
+    classesData[me.classe].forEach((a, i) => abilitySelect.innerHTML += `<option value="${i + 1}">${a.name}</option>`);
 
-  const targetSelect = document.createElement("select");
-  targetSelect.id = "targetSelect";
-  targetSelect.style.marginRight = "8px";
-  targetSelect.style.padding = "4px";
+    const targetSelect = document.createElement("select");
+    targetSelect.id = "targetSelect";
+    targetSelect.style.marginRight = "8px";
+    targetSelect.style.padding = "4px";
 
-  const targets = Object.values(playersData).filter(p => p.alive && p.id !== playerId);
-  if (targets.length === 0) {
-    const opt = document.createElement("option");
-    opt.textContent = "Nenhum alvo vivo";
-    opt.disabled = true;
-    targetSelect.appendChild(opt);
-  } else {
-    targets.forEach(p => {
+    const targets = Object.values(playersData).filter(p => p.alive && p.id !== playerId);
+    if (targets.length === 0) {
       const opt = document.createElement("option");
-      opt.value = p.id;
-      opt.textContent = p.name;
+      opt.textContent = "Nenhum alvo vivo";
+      opt.disabled = true;
       targetSelect.appendChild(opt);
-    });
+    } else {
+      targets.forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = p.name;
+        targetSelect.appendChild(opt);
+      });
+    }
+
+    const playBtn = document.createElement("button");
+    playBtn.textContent = "⚔️ Usar Habilidade";
+    playBtn.onclick = () => {
+      const abilityIndex = parseInt(abilitySelect.value);
+      const targetId = targetSelect.value;
+      if (!targetId) return alert("Selecione um alvo!");
+      socket.emit("playAbility", { targetId, abilityIndex });
+    };
+
+    container.appendChild(document.createTextNode("Habilidade: "));
+    container.appendChild(abilitySelect);
+    container.appendChild(document.createTextNode("  Alvo: "));
+    container.appendChild(targetSelect);
+    container.appendChild(playBtn);
   }
 
-  const playBtn = document.createElement("button");
-  playBtn.textContent = "⚔️ Usar Habilidade";
-  playBtn.onclick = () => {
-    const abilityIndex = parseInt(abilitySelect.value);
-    const targetId = targetSelect.value;
-    if (!targetId) return alert("Selecione um alvo!");
-    socket.emit("playAbility", { targetId, abilityIndex });
-  };
-
+  // Botão de reiniciar **sempre**
   const restartBtn = document.createElement("button");
   restartBtn.textContent = "🔄 Reiniciar";
   restartBtn.style.marginLeft = "8px";
   restartBtn.onclick = () => socket.emit("restartVote");
-
-  container.appendChild(document.createTextNode("Habilidade: "));
-  container.appendChild(abilitySelect);
-  container.appendChild(document.createTextNode("  Alvo: "));
-  container.appendChild(targetSelect);
-  container.appendChild(playBtn);
   container.appendChild(restartBtn);
 }
 
