@@ -5,7 +5,6 @@ const fs = require("fs");
 const path = require("path");
 const bcrypt = require("bcryptjs");
 
-
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
@@ -115,7 +114,7 @@ io.on("connection", (socket) => {
     socket.emit("loginResponse", res);
   });
 
-  // Adiciona jogador ao jogo
+  // Adiciona jogador
   players[socket.id] = { id: socket.id, name: "Jogador", displayName: "Jogador", classe: null, hp: 0, alive: true, buffs: [] };
   turnOrder.push(socket.id);
 
@@ -142,7 +141,7 @@ io.on("connection", (socket) => {
     io.emit("updatePlayers", players);
   });
 
-  // Habilidades e restart
+  // === NOVA VERSÃO DO SISTEMA DE HABILIDADES ===
   socket.on("playAbility", ({ targetId, abilityIndex }) => {
     const player = players[socket.id];
     if (!player.alive) return;
@@ -156,23 +155,82 @@ io.on("connection", (socket) => {
     let color = "white";
     let message = "";
 
+    // === Buffs ===
     if (ability.type === "buff") {
-      let buff = { type: player.classe.toLowerCase(), remaining: 3, value: ability.value || 0 };
-      if (!player.buffs) player.buffs = [];
-      player.buffs.push(buff);
-      message = `${player.displayName} usou ${ability.name}!`;
-      color = "gold";
-    } else if (ability.type === "heal") {
+      let buffType = "";
+      if (player.classe === "Lobisomem" && ability.name === "Uivo Assustador") buffType = "absorbDamage";
+      else if (player.classe === "Vampiro" && ability.name === "Encanto") buffType = "reduceDamage";
+      else if (player.classe === "Bruxa" && ability.name === "Maldição") buffType = "curseReflect";
+      else if (player.classe === "Vampiro" && ability.name === "Suga Vida") buffType = "lifeSteal";
+
+      if (buffType) {
+        player.buffs.push({ type: buffType, remaining: 3, value: 0 });
+        message = `${player.displayName} usou ${ability.name} e ativou um efeito especial por 3 turnos!`;
+        color = "gold";
+      } else {
+        player.buffs.push({ type: player.classe.toLowerCase(), remaining: 3 });
+        message = `${player.displayName} usou ${ability.name}!`;
+        color = "gold";
+      }
+    }
+
+    // === Cura ===
+    else if (ability.type === "heal") {
       player.hp += ability.value;
       message = `${player.displayName} usou ${ability.name} e recuperou ${ability.value} HP!`;
       color = "lime";
-    } else if (ability.type === "atk") {
+    }
+
+    // === Ataque ===
+    else if (ability.type === "atk") {
       let damage = ability.value;
-      if (player.buffs) player.buffs.forEach(b => { if (b.type === player.classe.toLowerCase()) { damage += b.value; b.value = 0; } });
-      if (target.buffs) target.buffs.forEach(b => { if (target.classe.toLowerCase() === "bruxa" && b.type === "bruxa") { player.hp -= Math.floor(damage / 2); } });
+
+      // Buff do Lobisomem: soma dano absorvido
+      const absorbBuff = player.buffs?.find(b => b.type === "absorbDamage");
+      if (absorbBuff && absorbBuff.value > 0) {
+        damage += absorbBuff.value;
+        absorbBuff.value = 0;
+        message += `🔥 A fúria acumulada aumentou o dano! `;
+      }
+
+      // Redução de dano do Vampiro
+      const reduceBuff = target.buffs?.find(b => b.type === "reduceDamage");
+      if (reduceBuff) {
+        damage = Math.floor(damage / 2);
+      }
+
+      // Dano no alvo
       target.hp -= damage;
-      if (target.hp <= 0) { target.hp = 0; target.alive = false; message = `💀 ${target.displayName} morreu!`; color="red"; }
-      message = message || `${player.displayName} atacou ${target.displayName} com ${ability.name} causando ${damage} de dano!`;
+
+      // Reflexo da Bruxa
+      const reflectBuff = target.buffs?.find(b => b.type === "curseReflect");
+      if (reflectBuff) {
+        const reflected = Math.floor(damage / 2);
+        player.hp -= reflected;
+        io.emit("message", `<span style="color:violet;">${target.displayName} refletiu ${reflected} de dano com a Maldição!</span>`);
+      }
+
+      // Dano recebido ativa efeitos de buffs defensivos
+      if (target.buffs) {
+        target.buffs.forEach(b => {
+          if (b.type === "absorbDamage") b.value += damage; // Lobisomem acumula
+          if (b.type === "lifeSteal") {
+            const healAmount = Math.floor((damage / 3) + Math.random() * (damage / 3));
+            target.hp += healAmount;
+            io.emit("message", `<span style="color:crimson;">${target.displayName} drenou ${healAmount} de vida com Suga Vida!</span>`);
+          }
+        });
+      }
+
+      // Morte
+      if (target.hp <= 0) {
+        target.hp = 0;
+        target.alive = false;
+        message = `💀 ${target.displayName} foi derrotado!`;
+        color = "red";
+      } else {
+        message += `${player.displayName} atacou ${target.displayName} com ${ability.name}, causando ${damage} de dano!`;
+      }
     }
 
     io.emit("message", `<span style="color:${color};">${message}</span>`);

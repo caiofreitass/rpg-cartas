@@ -108,6 +108,46 @@
       font-size: 0.85em;
       color: #ff5555;
     }
+
+    /* Guia de classes */
+    #guideButton { position: fixed; bottom: 20px; right: 20px; cursor: pointer; font-size: 32px; z-index: 999; }
+    #classGuide {
+      display: none;
+      position: fixed;
+      bottom: 70px;
+      right: 20px;
+      width: 300px;
+      max-height: 400px;
+      overflow-y: auto;
+      background: #222;
+      border: 2px solid #555;
+      border-radius: 10px;
+      padding: 15px;
+      z-index: 1000;
+      text-align: left;
+    }
+    #classGuide h3 { margin-top: 0; }
+    .classButton {
+      display: block;
+      width: 100%;
+      margin: 6px 0;
+      padding: 8px;
+      background: #444;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      color: #fff;
+    }
+    .classButton:hover { background: #666; }
+    #closeGuide { cursor:pointer; color: crimson; font-weight:bold; float: right; }
+    #classDetails { margin-top: 10px; }
+    .ability {
+      margin-bottom: 5px;
+      padding: 5px;
+      border-left: 4px solid gold;
+      background: #333;
+      border-radius: 3px;
+    }
   </style>
 </head>
 <body>
@@ -134,9 +174,88 @@
   <div id="players"></div>
   <div id="actions"></div>
   <div id="log"></div>
+
+  <!-- Botão e painel do guia -->
+  <div id="guideButton">📖</div>
+  <div id="classGuide">
+    <div id="closeGuide">✖</div>
+    <h3>Guia de Classes</h3>
+    <button class="classButton" data-class="Vampiro">🧛 Vampiro</button>
+    <button class="classButton" data-class="Lobisomem">🐺 Lobisomem</button>
+    <button class="classButton" data-class="Bruxa">🧙‍♀️ Bruxa</button>
+    <div id="classDetails"></div>
+  </div>
+
   <footer>Feito por Caio ⚡</footer>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="client.js"></script>
+  <script>
+    const classesData = {
+      "Lobisomem": {
+        buffs: [{ name: "Uivo Assustador", effect: "Absorve dano recebido e soma ao próximo ataque por 3 turnos." }],
+        abilities: [
+          { name: "Ataque Selvagem", type: "atk", value: 8 },
+          { name: "Garras Rasgantes", type: "atk", value: 7 },
+          { name: "Investida", type: "atk", value: 6 },
+          { name: "Regeneração", type: "heal", value: 5 }
+        ]
+      },
+      "Vampiro": {
+        buffs: [
+          { name: "Encanto", effect: "Reduz dano recebido pela metade por 3 turnos." },
+          { name: "Suga Vida", effect: "Drena vida sempre que causa ou recebe dano por 3 turnos." }
+        ],
+        abilities: [
+          { name: "Suga Vida", type: "atk", value: 9 },
+          { name: "Investida Noturna", type: "atk", value: 8 },
+          { name: "Mordida Vampírica", type: "atk", value: 7 },
+          { name: "Neblina Sombria", type: "heal", value: 6 }
+        ]
+      },
+      "Bruxa": {
+        buffs: [{ name: "Maldição", effect: "Reflete metade do dano recebido por 3 turnos." }],
+        abilities: [
+          { name: "Bola de Fogo", type: "atk", value: 6 },
+          { name: "Raio Congelante", type: "atk", value: 5 },
+          { name: "Poção Curativa", type: "heal", value: 10 },
+          { name: "Espinho Venenoso", type: "atk", value: 7 }
+        ]
+      }
+    };
+
+    const guideButton = document.getElementById("guideButton");
+    const classGuide = document.getElementById("classGuide");
+    const closeGuide = document.getElementById("closeGuide");
+    const classDetails = document.getElementById("classDetails");
+
+    guideButton.addEventListener("click", () => {
+      classGuide.style.display = "block";
+    });
+
+    closeGuide.addEventListener("click", () => {
+      classGuide.style.display = "none";
+      classDetails.innerHTML = "";
+    });
+
+    document.querySelectorAll(".classButton").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const cls = btn.dataset.class;
+        const data = classesData[cls];
+        let html = `<h4>${cls}</h4>`;
+        html += `<strong>Buffs:</strong>`;
+        html += `<ul>`;
+        data.buffs.forEach(b => html += `<li>${b.name}: ${b.effect}</li>`);
+        html += `</ul>`;
+        html += `<strong>Habilidades:</strong>`;
+        html += `<div>`;
+        data.abilities.forEach(a => {
+          html += `<div class="ability">${a.name} [${a.type.toUpperCase()}] ${a.value ? '- ' + a.value : ''}</div>`;
+        });
+        html += `</div>`;
+        classDetails.innerHTML = html;
+      });
+    });
+  </script>
 </body>
 </html>
