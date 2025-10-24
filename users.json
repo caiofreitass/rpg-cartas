@@ -1,11 +1,62 @@
 {
   "caiorimador": {
-    "password": "$2b$10$j98BgaUSpRMPzWCBsRBYpeUr6PL59BH2Y6ky3WhXINkYNCtlAoKem"
+    "password": "$2b$10$j98BgaUSpRMPzWCBsRBYpeUr6PL59BH2Y6ky3WhXINkYNCtlAoKem",
+    "classe": "Bruxa",
+    "hp": 70,
+    "buffs": [],
+    "house": {
+      "name": "Minha Casa",
+      "items": []
+    },
+    "inventory": [],
+    "location": "cidade",
+    "pending": [],
+    "friends": [
+      "teste"
+    ]
   },
   "teste": {
-    "password": "$2b$10$ej9yMUwM5XdRR0zrNIrJpOYNFeXC.uuC1.605iKHrkbE5DteRk55u"
+    "password": "$2b$10$ej9yMUwM5XdRR0zrNIrJpOYNFeXC.uuC1.605iKHrkbE5DteRk55u",
+    "classe": "Vampiro",
+    "hp": 70,
+    "buffs": [],
+    "house": {
+      "name": "Minha Casa",
+      "items": []
+    },
+    "inventory": [],
+    "location": "cidade",
+    "friends": [
+      "caiorimador"
+    ]
   },
   "teste1": {
     "password": "$2b$10$j0z0G/xVZlMh36UI05mAwOFM0t3s1vvsUZnNiS4jtJDN7rKfyf6iu"
+  },
+  "caiowolgang": {
+    "password": "$2b$10$kYnJKd44E.a.WdOjk1R5M.Z.w/MBeYnYfme4Opw4G5iiVZec1zt/.",
+    "classe": "Lobisomem",
+    "hp": 70,
+    "alive": true,
+    "buffs": [],
+    "house": {
+      "name": "Minha Casa",
+      "items": []
+    },
+    "inventory": [],
+    "location": "cidade"
+  },
+  "teste2": {
+    "password": "$2b$10$vonBHLkPjjSaRbOuOSG6O.JUP28WiSD6QJjjce5zNSGJQFHLxF86i",
+    "classe": "Vampiro",
+    "hp": 60,
+    "alive": true,
+    "buffs": [],
+    "house": {
+      "name": "Minha Casa",
+      "items": []
+    },
+    "inventory": [],
+    "location": "cidade"
   }
 }

@@ -1,137 +1,197 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RPG de Cartas</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>RPG de Cartas — Retro Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
-body { background-color: #121212; color: #ddd; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; margin:0; padding:0; height:100vh; display:flex; flex-direction:column; justify-content:space-between; }
-h1 { color: #ffcc00; margin-top: 20px; text-shadow:0 0 10px #ffcc00; }
-#turnInfo { margin:10px auto; font-size:1.2em; color:#00bfff; }
-#players { display:flex; justify-content:center; gap:20px; flex-wrap:wrap; margin-top:10px; }
-#actions { margin:15px auto; }
-select, button { background:#1e1e1e; color:#fff; border:1px solid #555; border-radius:6px; padding:5px 10px; margin:4px; cursor:pointer; transition:0.2s; }
-button:hover, select:hover { background:#2a2a2a; border-color:#888; }
-#log { background:#0e0e0e; height:230px; overflow-y:auto; border-top:2px solid #333; padding:10px; text-align:left; font-size:0.95em; }
-#log div { margin:3px 0; line-height:1.4em; }
-footer { background:#1a1a1a; color:#777; font-size:0.9em; padding:8px; border-top:1px solid #333; }
-#loginPanel { position:fixed; top:10px; right:10px; background:#222; padding:12px; border-radius:8px; box-shadow:0 0 10px #000; text-align:left; z-index:999; }
-#loginPanel input, #loginPanel select { display:block; width:160px; margin:5px 0; padding:5px; border-radius:4px; border:1px solid #555; background:#1e1e1e; color:#fff; }
-#loginMsg { margin-top:5px; font-size:0.85em; color:#ff5555; }
-#guideButton { position:fixed; bottom:20px; right:20px; cursor:pointer; font-size:32px; z-index:999; }
-#classGuide { display:none; position:fixed; bottom:70px; right:20px; width:300px; max-height:400px; overflow-y:auto; background:#222; border:2px solid #555; border-radius:10px; padding:15px; z-index:1000; text-align:left; }
-#classGuide h3 { margin-top:0; }
-.classButton { display:block; width:100%; margin:6px 0; padding:8px; background:#444; border:none; border-radius:5px; cursor:pointer; color:#fff; }
-.classButton:hover { background:#666; }
-#closeGuide { cursor:pointer; color:crimson; font-weight:bold; float:right; }
-#classDetails { margin-top:10px; }
-.ability { margin-bottom:5px; padding:5px; border-left:4px solid gold; background:#333; border-radius:3px; }
+  :root{
+    --bg:#0b0b0f;
+    --panel:#0f1114;
+    --muted:#9aa3b2;
+    --accent:#00ffd5;
+    --accent2:#ff4dff;
+    --neon:#00bfff;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; background:
+    radial-gradient(1200px 400px at 10% 10%, rgba(0,191,255,0.04), transparent),
+    radial-gradient(800px 300px at 90% 90%, rgba(255,77,255,0.03), transparent),
+    var(--bg);
+    color:#e6eef8; font-family:Inter, system-ui, sans-serif;
+    display:flex; flex-direction:column; align-items:center;
+  }
+
+  h1{ font-family:'Press Start 2P', monospace; color:var(--accent); margin:22px 0; text-shadow:0 0 12px rgba(0,191,255,0.08); font-size:20px}
+
+  /* LOGIN */
+  #loginPanel{
+    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.6));
+    z-index:1200;
+  }
+  .loginBox{
+    width:760px; max-width:92%; background:linear-gradient(180deg,#0d1116,#0b0d10);
+    border:1px solid rgba(255,255,255,0.04); padding:28px; border-radius:12px;
+    box-shadow:0 10px 40px rgba(0,0,0,0.7), 0 0 18px rgba(0,191,255,0.03);
+    display:flex; gap:20px; align-items:center;
+  }
+  .loginLeft{
+    width:48%;
+    padding:10px;
+    display:flex; flex-direction:column; gap:10px; align-items:center; justify-content:center;
+    border-right:1px dashed rgba(255,255,255,0.03);
+  }
+  .brand{
+    font-family:'Press Start 2P', monospace; color:var(--neon); font-size:18px;
+    text-shadow:0 0 8px rgba(0,191,255,0.12);
+  }
+  .loginRight{width:52%; padding:6px 12px; display:flex; flex-direction:column; gap:10px;}
+  input {
+    width:100%; padding:12px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.04);
+    background:linear-gradient(180deg,#0b0d10,#061018); color:#dfefff; outline:none; font-size:14px;
+    box-shadow: inset 0 -3px 8px rgba(0,0,0,0.6);
+  }
+  .btnRow{display:flex; gap:10px; margin-top:6px;}
+  button.primary{
+    flex:1; background:linear-gradient(90deg,var(--accent),var(--accent2)); color:#001014;
+    padding:12px; border-radius:10px; border:none; cursor:pointer; font-weight:700; letter-spacing:0.6px;
+    box-shadow:0 6px 18px rgba(0,191,255,0.06), inset 0 -2px 0 rgba(0,0,0,0.2);
+  }
+  button.ghost{
+    flex:1; background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.04);
+    padding:12px; border-radius:10px; cursor:pointer;
+  }
+  #loginMsg{ text-align:center; color:#ff7b7b; font-size:13px; min-height:18px; margin-top:4px }
+
+  /* MENU */
+  #menu{ display:none; margin-top:110px; display:flex; gap:18px; align-items:center; justify-content:center; }
+  .menuBtn{
+    width:260px; height:96px; background:linear-gradient(180deg,#071018,#0b1320); border-radius:12px;
+    border:1px solid rgba(255,255,255,0.04); display:flex; flex-direction:column; align-items:center; justify-content:center;
+    cursor:pointer; transition:transform .12s ease, box-shadow .12s ease;
+    box-shadow: 0 6px 30px rgba(0,0,0,0.6);
+  }
+  .menuBtn:hover{ transform:translateY(-6px); box-shadow:0 18px 40px rgba(0,0,0,0.7), 0 0 18px rgba(0,191,255,0.04); }
+  .menuBtn h2{ margin:0; font-size:14px; font-weight:700; color:var(--accent); font-family: 'Press Start 2P', monospace; }
+  .menuBtn p{ margin:6px 0 0 0; color:var(--muted); font-size:12px }
+
+  /* Main containers */
+  .screen{ display:none; width:100%; max-width:1100px; padding:18px; margin-top:18px; position:relative; }
+
+  /* ARENA */
+  #arena{ display:none; flex-direction:column; align-items:center; gap:12px; }
+  #players{ display:flex; flex-wrap:wrap; justify-content:center; gap:18px; width:100% }
+  #actions{ display:flex; gap:8px; align-items:center; justify-content:center; margin-top:6px }
+  #turnInfo{ color:var(--neon); text-align:center; font-weight:600; margin-bottom:6px }
+  #log{ width:100%; background:#081018; padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.03); max-height:260px; overflow:auto; }
+
+  /* CHAT */
+  #chatBox{ width:100%; margin-top:6px; display:flex; flex-direction:column; gap:8px; }
+  #chatMessages{ background:#061018; height:160px; overflow:auto; padding:10px; border-radius:6px; border:1px solid rgba(255,255,255,0.02) }
+  #chatInput{ width:70%; padding:10px; border-radius:8px; }
+  #sendChat{ padding:10px 14px; border-radius:8px; background:linear-gradient(90deg,#2255ff,#33ffee); border:none; cursor:pointer; }
+
+  /* FRIENDS */
+  #friends{ display:none; flex-direction:column; align-items:center; gap:12px; }
+  #friendsList, #pendingInvites{ width:100%; background:#071018; padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.03) }
+  .friendItem{ display:flex; justify-content:space-between; gap:8px; padding:8px 6px; border-bottom:1px solid rgba(255,255,255,0.02) }
+  .friendItem button{ padding:6px 8px; border-radius:6px; border:none; cursor:pointer; }
+
+  /* HOUSE */
+  #house{ display:none; flex-direction:column; align-items:center; gap:12px; }
+  #classButtonsContainer{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px }
+  .classButton{ padding:8px 10px; background:#16202a; border-radius:8px; border:1px solid rgba(255,255,255,0.02); cursor:pointer; }
+  #classDetails, #inventory{ width:100%; background:#071018; padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.03) }
+
+  footer{ margin-top:36px; padding:14px; width:100%; text-align:center; color:var(--muted); font-size:13px }
+  @media(max-width:880px){
+    .loginBox{ flex-direction:column; width:94%; }
+    .loginLeft{ width:100%; border-right:none; border-bottom:1px dashed rgba(255,255,255,0.03); padding-bottom:12px }
+    .loginRight{ width:100% }
+    .menuBtn{ width:88%; height:72px; }
+  }
 </style>
 </head>
 <body>
-<h1>🃏 RPG de Cartas</h1>
+  <h1>🃏 RPG de Cartas</h1>
 
-<div id="loginPanel">
-<input id="username" placeholder="Usuário">
-<input id="password" placeholder="Senha" type="password">
-<label for="classSelect" style="color:#fff; font-size:0.9em;">Escolha sua classe:</label>
-<select id="classSelect">
-  <option value="">-- Selecionar --</option>
-  <option value="Lobisomem">Lobisomem 🐺</option>
-  <option value="Vampiro">Vampiro 🧛‍♂️</option>
-  <option value="Bruxa">Bruxa 🧙‍♀️</option>
-</select>
-<button id="btnRegister">Registrar</button>
-<button id="btnLogin">Login</button>
-<div id="loginMsg"></div>
-</div>
+  <!-- LOGIN CENTRAL -->
+  <div id="loginPanel">
+    <div class="loginBox">
+      <div class="loginLeft">
+        <div class="brand">RPG • CARTAS</div>
+        <div style="color:var(--muted); font-size:13px; margin-top:10px; width:88%; text-align:center">
+          Bem-vindo — faça login ou registre uma nova conta para começar.
+        </div>
+      </div>
 
-<div id="turnInfo">Aguardando jogadores...</div>
-<div id="players"></div>
-<div id="actions"></div>
-<div id="log"></div>
+      <div class="loginRight">
+        <input id="username" placeholder="Usuário (ex: caio123)">
+        <input id="password" placeholder="Senha" type="password">
+        <div class="btnRow">
+          <button class="ghost" id="btnRegister">Registrar</button>
+          <button class="primary" id="btnLogin">Login</button>
+        </div>
+        <div id="loginMsg"></div>
+      </div>
+    </div>
+  </div>
 
-<div id="guideButton">📖</div>
-<div id="classGuide">
-<div id="closeGuide">✖</div>
-<h3>Guia de Classes</h3>
-<button class="classButton" data-class="Vampiro">🧛 Vampiro</button>
-<button class="classButton" data-class="Lobisomem">🐺 Lobisomem</button>
-<button class="classButton" data-class="Bruxa">🧙‍♀️ Bruxa</button>
-<div id="classDetails"></div>
-</div>
+  <!-- MENU PRINCIPAL -->
+  <div id="menu">
+    <div class="menuBtn" id="btnArena"><h2>ARENA</h2><p>Ir para batalhas</p></div>
+    <div class="menuBtn" id="btnFriends"><h2>AMIGOS</h2><p>Gerenciar convites e adicionar</p></div>
+    <div class="menuBtn" id="btnHouse"><h2>CASA</h2><p>Inventário e trocar classe</p></div>
+  </div>
 
+  <!-- ARENA -->
+  <div id="arena" class="screen">
+    <div id="turnInfo">Aguardando jogadores...</div>
+    <div id="players"></div>
+    <div id="actions"></div>
+    <div id="log"></div>
+    <div id="chatBox">
+      <h3 style="margin:6px 0 0 0">💬 Chat dos Jogadores</h3>
+      <div id="chatMessages"></div>
+      <div style="display:flex; gap:8px; margin-top:8px">
+        <input id="chatInput" type="text" placeholder="Digite sua mensagem..." />
+        <button id="sendChat">Enviar</button>
+      </div>
+    </div>
+  </div>
 
+  <!-- FRIENDS -->
+  <div id="friends" class="screen">
+    <h2 style="margin:6px 0">👥 Amigos</h2>
+    <div style="width:100%; max-width:720px; display:flex; gap:8px; margin-bottom:8px">
+      <input id="friendInput" placeholder="Adicionar amigo (nome)" style="flex:1; padding:10px; border-radius:8px; background:#061018; border:1px solid rgba(255,255,255,0.02); color:#e6eef8"/>
+      <button id="addFriendBtn" style="padding:10px 12px; border-radius:8px; border:none; background:linear-gradient(90deg,#00d4ff,#8a00ff); color:#001014; cursor:pointer">Adicionar</button>
+    </div>
+    <h4 style="margin:6px 0 0 0">Convites Pendentes</h4>
+    <div id="pendingInvites"></div>
+    <h4 style="margin:12px 0 0 0">Sua Lista de Amigos</h4>
+    <div id="friendsList"></div>
+  </div>
 
-<!-- === CHAT DOS JOGADORES === -->
-<div id="chatBox" style="margin-top:15px; border:1px solid #555; padding:10px; border-radius:8px; background:#1e1e1e;">
-  <h3 style="margin-bottom:8px;">💬 Chat dos Jogadores</h3>
-  <div id="chatMessages" style="height:150px; overflow-y:auto; background:#111; padding:5px; border-radius:5px; margin-bottom:5px;"></div>
-  <input id="chatInput" type="text" placeholder="Digite sua mensagem..." style="width:75%; padding:5px; border-radius:5px; border:none; outline:none; background:#222; color:#ddd;">
-  <button id="sendChat" style="padding:5px 10px; background:#444; color:#fff; border:none; border-radius:5px; cursor:pointer;">Enviar</button>
-</div>
+  <!-- HOUSE -->
+  <div id="house" class="screen">
+    <h2>🏠 Casa</h2>
+    <div style="width:100%; max-width:720px;">
+      <h3>Classe atual: <span id="houseClasseDisplay">Nenhuma</span></h3>
+      <label style="color:var(--muted); font-size:13px">Trocar classe</label>
+      <div id="classButtonsContainer"></div>
+      <div id="classDetails" style="margin-top:12px"></div>
+      <h3 style="margin-top:16px">Inventário</h3>
+      <div id="inventory">Nenhum item.</div>
+    </div>
+  </div>
 
+  <footer>Feito por Caio ⚡</footer>
 
-<footer>Feito por Caio ⚡</footer>
-
-<script src="/socket.io/socket.io.js"></script>
-<script src="client.js"></script>
-<script>
-// variável separada para o guia, corrigida
-const localClassesData = {
-"Lobisomem": {
-    buffs:[{name:"Uivo Assustador", effect:"Absorve dano recebido e soma ao próximo ataque por 3 turnos."}],
-    abilities:[
-        {name:"Ataque Selvagem", type:"atk", value:8},
-        {name:"Garras Rasgantes", type:"atk", value:7},
-        {name:"Investida", type:"atk", value:6},
-        {name:"Regeneração", type:"heal", value:5}
-    ]
-},
-"Vampiro": {
-    buffs:[
-        {name:"Encanto", effect:"Reduz dano recebido pela metade por 3 turnos."},
-        {name:"Suga Vida", effect:"Drena vida sempre que causa ou recebe dano por 3 turnos."}
-    ],
-    abilities:[
-        {name:"Suga Vida", type:"buff"},   // corrigido
-        {name:"Investida Noturna", type:"atk", value:8},
-        {name:"Mordida Vampírica", type:"atk", value:7},
-        {name:"Neblina Sombria", type:"heal", value:6}
-    ]
-},
-"Bruxa": {
-    buffs:[{name:"Maldição", effect:"Reflete metade do dano recebido por 3 turnos."}],
-    abilities:[
-        {name:"Bola de Fogo", type:"atk", value:6},
-        {name:"Raio Congelante", type:"atk", value:5},
-        {name:"Poção Curativa", type:"heal", value:8},
-        {name:"Espinho Venenoso", type:"atk", value:7}
-    ]
-}
-};
-
-const guideButton = document.getElementById("guideButton");
-const classGuide = document.getElementById("classGuide");
-const closeGuide = document.getElementById("closeGuide");
-const classDetails = document.getElementById("classDetails");
-
-guideButton.addEventListener("click", ()=>classGuide.style.display="block");
-closeGuide.addEventListener("click", ()=>{ classGuide.style.display="none"; classDetails.innerHTML=""; });
-
-document.querySelectorAll(".classButton").forEach(btn=>{
-btn.addEventListener("click", ()=>{
-  const cls = btn.dataset.class;
-  const data = localClassesData[cls];
-  let html = `<h4>${cls}</h4>`;
-  html += `<strong>Buffs:</strong><ul>`;
-  data.buffs.forEach(b=> html += `<li>${b.name}: ${b.effect}</li>`);
-  html += `</ul><strong>Habilidades:</strong><div>`;
-  data.abilities.forEach(a=> html += `<div class="ability">${a.name} [${a.type.toUpperCase()}] ${a.value ? '- ' + a.value : ''}</div>`);
-  html += `</div>`;
-  classDetails.innerHTML = html;
-});
-});
-</script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="client.js"></script>
 </body>
 </html>
