@@ -1,14 +1,86 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>World</title>
   <link rel="stylesheet" href="max.css">
+  <style>
+    /* Ajustes rápidos para deixar o canvas centralizado */
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #111; /* fundo fora do canvas */
+    }
+    canvas {
+      border: 2px solid #000;
+      background-color: #2e7d32; /* verde do mundo */
+    }
+  </style>
 </head>
 <body>
 
-<canvas id="canvas" width="800" height="500"></canvas>
+  <!-- Canvas do mundo -->
+  <canvas id="canvas" width="800" height="500"></canvas>
 
-<script src="world.js"></script>
+  <!-- Botão voltar para o menu -->
+  <button style="position:absolute; top:10px; left:10px; z-index:10;"
+          onclick="window.location.href='index.html'">Voltar</button>
+
+  <!-- Script do jogo -->
+  <script>
+    let canvas
+    let ctx
+
+    let player = {
+      x: 200,
+      y: 200,
+      width: 20,
+      height: 20,
+      speed: 5
+    }
+
+    function startWorld() {
+      canvas = document.getElementById("canvas")
+      ctx = canvas.getContext("2d")
+
+      document.addEventListener("keydown", move)
+      gameLoop()
+    }
+
+    function move(e) {
+      if (e.key === "w") player.y -= player.speed
+      if (e.key === "s") player.y += player.speed
+      if (e.key === "a") player.x -= player.speed
+      if (e.key === "d") player.x += player.speed
+
+      // Limitar player dentro do canvas
+      if(player.x < 0) player.x = 0
+      if(player.y < 0) player.y = 0
+      if(player.x + player.width > canvas.width) player.x = canvas.width - player.width
+      if(player.y + player.height > canvas.height) player.y = canvas.height - player.height
+    }
+
+    function draw() {
+      // Fundo
+      ctx.fillStyle = "#2e7d32"
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      // Player
+      ctx.fillStyle = "red"
+      ctx.fillRect(player.x, player.y, player.width, player.height)
+    }
+
+    function gameLoop() {
+      draw()
+      requestAnimationFrame(gameLoop)
+    }
+
+    // Inicia o mundo assim que a página carregar
+    startWorld()
+  </script>
 </body>
 </html>
