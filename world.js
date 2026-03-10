@@ -2,7 +2,6 @@ const btnWorld = document.getElementById("btnWorld")
 const worldScreen = document.getElementById("world")
 
 let canvas
-let canvas
 let ctx
 
 let player = {
@@ -13,8 +12,8 @@ speed:10
 
 function startWorld(){
 
-initPlayer()
-initMap()
+canvas = document.getElementById("canvas")
+ctx = canvas.getContext("2d")
 
 gameLoop()
 
@@ -22,8 +21,7 @@ gameLoop()
 
 function gameLoop(){
 
-updatePlayer()
-drawMap()
+draw()
 
 requestAnimationFrame(gameLoop)
 
