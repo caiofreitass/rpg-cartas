@@ -1,49 +1,38 @@
 const btnWorld = document.getElementById("btnWorld")
 const worldScreen = document.getElementById("world")
 
-const canvas = document.getElementById("worldCanvas")
-const ctx = canvas.getContext("2d")
+let canvas
+let ctx
 
 let player = {x:100,y:100}
 
-btnWorld.onclick = () => {
+function startWorld(){
 
- document.querySelectorAll(".screen").forEach(s=>{
-  s.style.display="none"
- })
+canvas = document.getElementById("worldCanvas")
+ctx = canvas.getContext("2d")
 
- worldScreen.style.display="flex"
-
- draw()
+draw()
 
 }
 
 function draw(){
 
- ctx.fillStyle="#1e7a2f"
- ctx.fillRect(0,0,canvas.width,canvas.height)
+ctx.fillStyle="#2e7d32"
+ctx.fillRect(0,0,canvas.width,canvas.height)
 
- ctx.fillStyle="red"
- ctx.fillRect(player.x,player.y,20,20)
+ctx.fillStyle="red"
+ctx.fillRect(player.x,player.y,20,20)
 
 }
 
 document.addEventListener("keydown",e=>{
 
- if(e.key=="w") player.y-=10
- if(e.key=="s") player.y+=10
- if(e.key=="a") player.x-=10
- if(e.key=="d") player.x+=10
+if(e.key=="w") player.y-=10
+if(e.key=="s") player.y+=10
+if(e.key=="a") player.x-=10
+if(e.key=="d") player.x+=10
 
- draw()
+draw()
 
-})document.addEventListener("keydown",e=>{
-
- if(e.key=="w") player.y-=10
- if(e.key=="s") player.y+=10
- if(e.key=="a") player.x-=10
- if(e.key=="d") player.x+=10
-
- draw()
 
 })
