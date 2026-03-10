@@ -13,10 +13,19 @@ speed:10
 
 function startWorld(){
 
-canvas = document.getElementById("worldCanvas")
-ctx = canvas.getContext("2d")
+initPlayer()
+initMap()
 
-draw()
+gameLoop()
+
+}
+
+function gameLoop(){
+
+updatePlayer()
+drawMap()
+
+requestAnimationFrame(gameLoop)
 
 }
 
