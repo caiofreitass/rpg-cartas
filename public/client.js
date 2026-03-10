@@ -29,7 +29,7 @@ btnWorld.onclick = () => {
  const world = document.getElementById("world")
  world.style.display="flex"
 
- setTimeout(startWorld,50)
+ startWorld()
 
 }
 
