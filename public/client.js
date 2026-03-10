@@ -18,6 +18,21 @@ const arena = document.getElementById("arena");
 const friends = document.getElementById("friends");
 const house = document.getElementById("house");
 
+const btnWorld = document.getElementById("btnWorld")
+
+btnWorld.onclick = () => {
+
+ document.querySelectorAll(".screen").forEach(s=>{
+  s.style.display="none"
+ })
+
+ const world = document.getElementById("world")
+ world.style.display="flex"
+
+ setTimeout(startWorld,50)
+
+}
+
 const chatInput = document.getElementById("chatInput");
 const sendChat = document.getElementById("sendChat");
 const chatMessages = document.getElementById("chatMessages");
