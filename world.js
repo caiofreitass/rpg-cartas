@@ -2,7 +2,6 @@ const btnWorld = document.getElementById("btnWorld")
 const worldScreen = document.getElementById("world")
 
 let canvas
-let canvas
 let ctx
 
 let player = {
