@@ -108,6 +108,15 @@ document.getElementById("btnHouse").onclick = () => {
   if (loggedIn) socket.emit("requestInventory");
 };
 
+document.getElementById("btnWorld").onclick = () => {
+
+  document.querySelectorAll(".screen").forEach(s => s.style.display = "none")
+
+  document.getElementById("world").style.display = "flex"
+
+}
+
+
 // Exit arena button
 const exitBtn = document.createElement("button");
 exitBtn.id = "exitArenaBtn";
