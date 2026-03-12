@@ -106,16 +106,16 @@ function draw() {
 
   // todos os jogadores
   for (let id in worldPlayers) {
-    let p = worldPlayers[id];
+  let p = worldPlayers[id];
 
-    // carregar sprite da classe
-    let img = new Image();
-    img.src = `./${p.class}.png`; // assume que cada jogador tem a classe salva
+  // usar a imagem já carregada para o jogador local
+  let imgToDraw = (id === socket.id) ? playerImg : new Image();
+  if (id !== socket.id) imgToDraw.src = `./${p.class || "humano"}.png`;
 
-    drawPlayer(p.x - offsetX, p.y - offsetY, img, p.direction || "right");
-    ctx.fillStyle = "white";
-    ctx.fillText(p.name || "Player", p.x - offsetX - 15, p.y - offsetY - 10);
-  }
+  drawPlayer(p.x - offsetX, p.y - offsetY, imgToDraw, p.direction || "right");
+  ctx.fillStyle = "white";
+  ctx.fillText(p.name || "Player", p.x - offsetX - 15, p.y - offsetY - 10);
+}
 }
 
 // --- socket.io ---
