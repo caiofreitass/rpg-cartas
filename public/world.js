@@ -1,3 +1,30 @@
+const socket = io()
+
+// jogador local
+let player = { x: 400, y: 400, name: "Eu", worldX: 0, worldY: 0 }
+
+// recupera posição ao voltar da casa
+const returnX = parseFloat(localStorage.getItem("returnX"))
+const returnY = parseFloat(localStorage.getItem("returnY"))
+if(!isNaN(returnX) && !isNaN(returnY)) {
+    player.x = returnX + 20 // desloca um pouco pra frente da porta
+    player.y = returnY
+    localStorage.removeItem("returnX")
+    localStorage.removeItem("returnY")
+}
+
+// multiplayer
+let worldPlayers = {}
+
+// canvas
+let canvas = document.getElementById("worldCanvas")
+let ctx = canvas.getContext("2d")
+
+// teclado
+const keys = {}
+document.addEventListener("keydown", e => keys[e.key] = true)
+document.addEventListener("keyup", e => keys[e.key] = false)
+
 // configurações
 const NUM_TREES = 50
 const NUM_HOUSES = 3
@@ -13,8 +40,8 @@ villageImg.src = "/images/vila.png"
 let trees = []
 for(let i=0;i<NUM_TREES;i++){
     trees.push({
-        x: Math.random()*1800+100,
-        y: Math.random()*1800+100,
+        x: Math.random()*1800 + 100,
+        y: Math.random()*1800 + 100,
         width: 60,
         height: 80
     })
@@ -26,38 +53,48 @@ for(let i=0;i<NUM_HOUSES;i++){
     const w = 200
     const h = 150
     villages.push({
-        x: Math.random()*(2000-w),
-        y: Math.random()*(2000-h),
+        x: Math.random()*(2000 - w),
+        y: Math.random()*(2000 - h),
         width: w,
         height: h
     })
 }
 
-// função update
-function update(){
+// recebe posição de todos jogadores do servidor
+socket.on("worldPlayersUpdate", (data) => worldPlayers = data)
+
+// atualização local
+function update() {
     let speed = 5
-    if(keys["w"]) player.y -= speed
-    if(keys["s"]) player.y += speed
-    if(keys["a"]) player.x -= speed
-    if(keys["d"]) player.x += speed
+    let nextX = player.x
+    let nextY = player.y
+
+    if(keys["w"]) nextY -= speed
+    if(keys["s"]) nextY += speed
+    if(keys["a"]) nextX -= speed
+    if(keys["d"]) nextX += speed
 
     // colisão mapa (2000x2000)
-    if(player.x < 0) player.x = 0
-    if(player.y < 0) player.y = 0
-    if(player.x > 2000-30) player.x = 2000-30
-    if(player.y > 2000-30) player.y = 2000-30
+    if(nextX < 0) nextX = 0
+    if(nextY < 0) nextY = 0
+    if(nextX > 2000 - 30) nextX = 2000 - 30
+    if(nextY > 2000 - 30) nextY = 2000 - 30
 
     // colisão com árvores
     for(let t of trees){
-        if(player.x+30 > t.x && player.x < t.x+t.width &&
-           player.y+30 > t.y && player.y < t.y+t.height){
-               // simples: trava jogador
-               if(keys["w"]) player.y += speed
-               if(keys["s"]) player.y -= speed
-               if(keys["a"]) player.x += speed
-               if(keys["d"]) player.x -= speed
-           }
+        if(nextX + 30 > t.x && nextX < t.x + t.width &&
+           nextY + 30 > t.y && nextY < t.y + t.height){
+            // trava o movimento
+            if(keys["w"]) nextY += speed
+            if(keys["s"]) nextY -= speed
+            if(keys["a"]) nextX += speed
+            if(keys["d"]) nextX -= speed
+        }
     }
+
+    // atualiza posição do jogador
+    player.x = nextX
+    player.y = nextY
 
     // colisão com porta das vilas
     for(let v of villages){
@@ -67,38 +104,24 @@ function update(){
             width: 40,
             height: 30
         }
+
         if(player.x + 30 > door.x && player.x < door.x + door.width &&
            player.y + 30 > door.y && player.y < door.y + door.height){
+            
+            // salva posição para retornar ao sair da casa
+            localStorage.setItem("returnX", player.x)
+            localStorage.setItem("returnY", player.y)
+
             window.location.href = "house.html"
         }
     }
 
     // envia posição para o servidor
     socket.emit("playerMove", player)
-
-    // dentro da função update()
-for(let house of houses){
-    let hx = house.x
-    let hy = house.y
-    let hw = house.width
-    let hh = house.height
-
-    let playerBottomX = player.x + 15
-    let playerBottomY = player.y + 30
-
-    // se encostar na porta (centro inferior da casa)
-    if(playerBottomX > hx + hw/4 && playerBottomX < hx + 3*hw/4 && playerBottomY > hy + hh - 10 && playerBottomY < hy + hh){
-        // salva posição no mundo
-        player.worldX = player.x
-        player.worldY = player.y
-        window.location.href = "house.html"  // entra na casa
-    }
-}
-    
 }
 
-// função draw
-function draw(){
+// desenha tudo
+function draw() {
     ctx.clearRect(0,0,canvas.width,canvas.height)
 
     const offsetX = player.x - canvas.width/2
@@ -127,3 +150,12 @@ function draw(){
         ctx.fillText(p.name || "Player", p.x - offsetX - 15, p.y - offsetY - 10)
     }
 }
+
+// loop do jogo
+function gameLoop() {
+    update()
+    draw()
+    requestAnimationFrame(gameLoop)
+}
+
+gameLoop()
