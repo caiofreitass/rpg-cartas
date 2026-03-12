@@ -42,6 +42,31 @@ socket.on("worldPlayersUpdate", (data) => {
     worldPlayers = data
 })
 
+
+// imagem da vila
+const villageImg = new Image()
+villageImg.src = "vila.png"
+
+// define posição e tamanho da vila
+const village = { x: 1000, y: 1500, width: 200, height: 200, doorX: 180, doorY: 180, doorWidth: 40, doorHeight: 20 }
+
+// na função checkCollision ou update, detecta porta
+function checkVillageDoor() {
+    // porta: parte de baixo da vila
+    const px = player.x
+    const py = player.y
+    const doorGlobalX = village.x + village.doorX
+    const doorGlobalY = village.y + village.doorY
+    if(px + player.width > doorGlobalX &&
+       px < doorGlobalX + village.doorWidth &&
+       py + player.height > doorGlobalY &&
+       py < doorGlobalY + village.doorHeight){
+        // teleportar para house.html
+        window.location.href = `house.html?playerId=${socket.id}`
+    }
+}
+
+
 // colisão com mapa e árvores
 function checkCollision(newX, newY) {
     // bordas do mapa
