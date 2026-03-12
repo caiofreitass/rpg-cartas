@@ -1,7 +1,7 @@
 const socket = io()
 
 // jogador local
-let player = { x: 400, y: 400, name: "Eu" }
+let player = { x: 400, y: 400, name: "Eu", worldX: 0, worldY: 0 }
 
 // multiplayer dentro da casa
 let housePlayers = {}
@@ -20,7 +20,6 @@ socket.on("housePlayersUpdate", (data) => housePlayers = data)
 
 // colisão paredes internas
 function checkCollision(x, y) {
-    // limites simples da casa (paredes)
     const padding = 10
     if(x < padding) return true
     if(x > 770) return true
@@ -47,8 +46,16 @@ function update() {
 
     // detecta porta de saída (parte de baixo da casa)
     if(player.y >= 460) {
-        // envia evento pro servidor para voltar ao mundo
+        // envia evento pro servidor para atualizar multiplayer
         socket.emit("exitHouse", player)
+
+        // volta para o mundo com posição salva
+        const returnX = player.worldX + 20 // desloca 20px para frente da porta
+        const returnY = player.worldY
+        // salva no localStorage para recuperar no world.js
+        localStorage.setItem("returnX", returnX)
+        localStorage.setItem("returnY", returnY)
+        window.location.href = "world.html"
     }
 
     // envia posição para o servidor
@@ -68,7 +75,7 @@ function draw() {
     ctx.fillRect(0,0,10,500)    // esquerda
     ctx.fillRect(790,0,10,500)  // direita
     ctx.fillRect(0,0,800,10)    // topo
-    ctx.fillRect(0,0,800,500)   // base (menos porta, se quiser pode desenhar porta visual)
+    ctx.fillRect(0,0,800,500)   // base
 
     // jogadores
     for(let id in housePlayers){
