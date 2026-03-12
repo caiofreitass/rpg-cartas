@@ -17,6 +17,9 @@ const menu = document.getElementById("menu");
 const arena = document.getElementById("arena");
 const friends = document.getElementById("friends");
 const house = document.getElementById("house");
+const btnOpenWorld = document.getElementById("btnOpenWorld")
+
+
 
 const chatInput = document.getElementById("chatInput");
 const sendChat = document.getElementById("sendChat");
@@ -107,6 +110,21 @@ document.getElementById("btnHouse").onclick = () => {
   if (loggedIn) socket.emit("requestFriendsData");
   if (loggedIn) socket.emit("requestInventory");
 };
+document.getElementById("btnOpenWorld").onclick = () => {
+  menu.style.display = "none";
+  openworld.style.display = "flex";
+  arena.style.display = "none";
+  friends.style.display = "none";
+  house.style.display = "none";
+  if (chatMessages) chatMessages.innerHTML = "";
+
+  startWorld();
+};
+
+
+
+
+
 
 // Exit arena button
 const exitBtn = document.createElement("button");
@@ -328,6 +346,8 @@ function updateInventoryUI(arr) {
     inventoryDiv.appendChild(d);
   });
 }
+
+
 
 // esconder/mostrar inicialmente
 if (loginPanel) loginPanel.style.display = "flex";
