@@ -357,18 +357,18 @@ function renderActions() {
     const abilities = classData.abilities || [];
     
     // Ability select
-    const abilitySelect = document.createElement("select");
+  const abilitySelect = document.createElement("select");
 
-abilitySelect.style.marginRight = "8px";
-abilitySelect.style.padding = "6px";
-
-abilities.forEach((a,i)=>{
+abilities.forEach((a, i) => {
 
 const opt = document.createElement("option");
-opt.value = i+1;
+
+opt.value = i; // importante
 opt.textContent = a.name;
 
 abilitySelect.appendChild(opt);
+
+});
 
 });
 
