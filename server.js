@@ -184,7 +184,25 @@ function resetGame() {
 io.on("connection", (socket) => {
   console.log("Novo jogador:", socket.id);
 
+  // quando jogador entra no mundo aberto
+worldPlayers[socket.id] = { x: 200, y: 200, name: "Jogador" };
 
+// recebe movimentação do cliente
+socket.on("playerMove", (data) => {
+  if (worldPlayers[socket.id]) {
+    worldPlayers[socket.id].x = data.x;
+    worldPlayers[socket.id].y = data.y;
+    io.emit("worldPlayersUpdate", worldPlayers); // envia para todos
+  }
+});
+
+// remove jogador ao desconectar
+socket.on("disconnect", () => {
+  delete worldPlayers[socket.id];
+  io.emit("worldPlayersUpdate", worldPlayers);
+});
+   
+  
     // jogador entra no mundo aberto
   worldPlayers[socket.id] = { x: 200, y: 200 };
 
