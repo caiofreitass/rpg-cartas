@@ -1,6 +1,20 @@
-const socket = io();
+const socket = io()
 
-console.log("Conectado ao servidor");
+let player = {
+x:200,
+y:200
+}
+
+document.addEventListener("keydown", e => {
+
+if(e.key=="w") player.y-=5
+if(e.key=="s") player.y+=5
+if(e.key=="a") player.x-=5
+if(e.key=="d") player.x+=5
+
+socket.emit("playerMove", player)
+
+})
 
 let canvas = document.getElementById("worldCanvas")
 let ctx = canvas.getContext("2d")
