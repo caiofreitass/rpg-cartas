@@ -190,45 +190,61 @@ socket.on("classesData", data => {
   }
 });
 
-function showClassDetails(cls) {
-  const data = classesData[cls];
-  if (!data) return;
-  
-  classDetails.innerHTML = "";
-  
-  const title = document.createElement("h4");
-  title.style.margin = "0 0 6px 0";
-  title.textContent = cls;
-  classDetails.appendChild(title);
-  
-  if (data.buffs && data.buffs.length > 0) {
-    const buffsLabel = document.createElement("strong");
-    buffsLabel.textContent = "Buffs:";
-    classDetails.appendChild(buffsLabel);
-    
-    const buffsList = document.createElement("ul");
-    data.buffs.forEach(b => {
-      const li = document.createElement("li");
-      li.textContent = `${b.name}: ${b.effect}`;
-      buffsList.appendChild(li);
-    });
-    classDetails.appendChild(buffsList);
-  }
-  
-  if (data.abilities && data.abilities.length > 0) {
-    const abilitiesLabel = document.createElement("strong");
-    abilitiesLabel.textContent = "Habilidades:";
-    classDetails.appendChild(abilitiesLabel);
-    
-    const abilitiesDiv = document.createElement("div");
-    data.abilities.forEach(a => {
-      const abilityDiv = document.createElement("div");
-      abilityDiv.className = "ability";
-      abilityDiv.textContent = `${a.name} [${a.type.toUpperCase()}] ${a.value ? '- ' + a.value : ''}`;
-      abilitiesDiv.appendChild(abilityDiv);
-    });
-    classDetails.appendChild(abilitiesDiv);
-  }
+function showClassDetails(cls){
+
+const data = classesData[cls]
+
+if(!data){
+console.log("Classe não encontrada:", cls)
+return
+}
+
+classDetails.innerHTML = ""
+
+const title = document.createElement("h4")
+title.textContent = cls
+title.style.marginBottom = "6px"
+
+classDetails.appendChild(title)
+
+if(data.buffs?.length){
+
+const buffsLabel = document.createElement("strong")
+buffsLabel.textContent = "Buffs:"
+classDetails.appendChild(buffsLabel)
+
+const buffsList = document.createElement("ul")
+
+data.buffs.forEach(buff=>{
+const li = document.createElement("li")
+li.textContent = `${buff.name}: ${buff.effect}`
+buffsList.appendChild(li)
+})
+
+classDetails.appendChild(buffsList)
+
+}
+
+if(data.abilities?.length){
+
+const abilitiesLabel = document.createElement("strong")
+abilitiesLabel.textContent = "Habilidades:"
+classDetails.appendChild(abilitiesLabel)
+
+data.abilities.forEach(ability=>{
+
+const div = document.createElement("div")
+div.className = "ability"
+
+div.textContent =
+`${ability.name} [${ability.type.toUpperCase()}] ${ability.value ? "- "+ability.value : ""}`
+
+classDetails.appendChild(div)
+
+})
+
+}
+
 }
 
 // ARENA integration
