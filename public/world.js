@@ -1,4 +1,6 @@
-const socket = io()
+const socket = io();
+
+console.log("Conectado ao servidor");
 
 let canvas = document.getElementById("worldCanvas")
 let ctx = canvas.getContext("2d")
