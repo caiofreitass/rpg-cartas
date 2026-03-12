@@ -7,7 +7,7 @@ const ctx = canvas.getContext("2d");
 // --- Jogador local ---
 const playerClass = localStorage.getItem("playerClass") || "humano";
 const playerImg = new Image();
-playerImg.src = `./images/${playerClass}.png`;
+playerImg.src = `./${playerClass}.png`;
 
 let player = {
     x: 200,
