@@ -34,8 +34,10 @@ function generateTrees(qty = 50) {
     }
 }
 
-// gerar 50 árvores por padrão
-generateTrees(50)
+socket.on("worldState", data => {
+    trees = data.trees;
+    worldPlayers = data.worldPlayers;
+});
 
 // recebe posição de todos jogadores do servidor
 socket.on("worldPlayersUpdate", (data) => {
