@@ -1,3 +1,5 @@
+const socket = io()
+
 let canvas = document.getElementById("worldCanvas")
 let ctx = canvas.getContext("2d")
 
