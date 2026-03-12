@@ -73,6 +73,17 @@ function draw() {
     }
 }
 
+// Exemplo ao escolher a classe
+function chooseClass(className) {
+    localStorage.setItem("playerClass", className);
+    // depois você pode ir para o mundo
+    window.location.href = "world.html";
+}
+
+// Exemplo: botões da interface
+document.getElementById("btnLobisomem").onclick = () => chooseClass("lobisomem");
+document.getElementById("btnVampiro").onclick = () => chooseClass("vampiro");
+document.getElementById("btnBruxa").onclick = () => chooseClass("bruxa");
 // loop do jogo
 function gameLoop() {
     update()
