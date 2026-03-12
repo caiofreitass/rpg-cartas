@@ -173,6 +173,7 @@ socket.on("classesData", data => {
         alert(`Classe ${cls} escolhida!`);
       };
       classButtonsContainer.appendChild(btn);
+  
     });
   }
 });
@@ -366,6 +367,7 @@ function renderActions() {
       opt.textContent = a.name;
       abilitySelect.appendChild(opt);
       classDetails.appendChild(abilitySelect);
+      showClassDetails(cls)
     });
     
     // Target select
