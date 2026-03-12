@@ -1,7 +1,7 @@
 const socket = io()
 
 // jogador local
-let player = { x: 400, y: 400, name: "Eu", worldX: 0, worldY: 0 }
+let player = { x: 400, y: 400, name: "Eu" }
 
 // multiplayer dentro da casa
 let housePlayers = {}
@@ -16,17 +16,9 @@ document.addEventListener("keydown", e => keys[e.key] = true)
 document.addEventListener("keyup", e => keys[e.key] = false)
 
 // recebe posição de todos jogadores do servidor
-socket.on("housePlayersUpdate", (data) => housePlayers = data)
-
-// colisão paredes internas
-function checkCollision(x, y) {
-    const padding = 10
-    if(x < padding) return true
-    if(x > 770) return true
-    if(y < padding) return true
-    if(y > 470) return true
-    return false
-}
+socket.on("housePlayersUpdate", (data) => {
+    housePlayers = data
+})
 
 // atualização local
 function update() {
@@ -45,16 +37,10 @@ function update() {
     }
 
     // detecta porta de saída (parte de baixo da casa)
-    if(player.y >= 460) {
-        // envia evento pro servidor para atualizar multiplayer
-        socket.emit("exitHouse", player)
-
-        // volta para o mundo com posição salva
-        const returnX = player.worldX + 20 // desloca 20px para frente da porta
-        const returnY = player.worldY
-        // salva no localStorage para recuperar no world.js
-        localStorage.setItem("returnX", returnX)
-        localStorage.setItem("returnY", returnY)
+    if(player.y >= 460){
+        // salva posição para retornar um pouco à frente
+        localStorage.setItem("returnX", player.x)
+        localStorage.setItem("returnY", player.y + 50)
         window.location.href = "world.html"
     }
 
@@ -77,7 +63,7 @@ function draw() {
     ctx.fillRect(0,0,800,10)    // topo
     ctx.fillRect(0,0,800,500)   // base
 
-    // jogadores
+    // jogadores (local + outros)
     for(let id in housePlayers){
         let p = housePlayers[id]
         ctx.fillStyle = (id === socket.id) ? "green" : "red"
@@ -95,3 +81,13 @@ function gameLoop() {
 }
 
 gameLoop()
+
+// --- função de colisão (paredes internas) ---
+function checkCollision(x, y){
+    const padding = 10
+    if(x < padding) return true
+    if(x > 770) return true
+    if(y < padding) return true
+    if(y > 470) return true
+    return false
+}
