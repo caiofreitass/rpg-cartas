@@ -200,18 +200,7 @@ socket.on("disconnect", () => {
   io.emit("worldPlayersUpdate", worldPlayers);
 });
    
-  // multiplayer na casa
-let housePlayers = {}
-
-socket.on("houseMove", (data) => {
-    housePlayers[socket.id] = data
-    io.emit("housePlayersUpdate", housePlayers)
-})
-
-socket.on("disconnect", () => {
-    delete housePlayers[socket.id]
-    io.emit("housePlayersUpdate", housePlayers)
-})
+  
 
   // CHAT
   socket.on("playerChat", (msg) => {
