@@ -357,20 +357,21 @@ function renderActions() {
     const abilities = classData.abilities || [];
     
     // Ability select
-  const abilitySelect = document.createElement("select");
+ const abilitySelect = document.createElement("select");
+abilitySelect.style.marginRight = "8px";
+abilitySelect.style.padding = "6px";
 
-abilities.forEach((a, i) => {
+if (abilities && abilities.length > 0) {
 
-const opt = document.createElement("option");
+  abilities.forEach((a, i) => {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = a.name;
+    abilitySelect.appendChild(opt);
+  });
 
-opt.value = i; // importante
-opt.textContent = a.name;
+}
 
-abilitySelect.appendChild(opt);
-
-});
-
-});
 
 classDetails.appendChild(abilitySelect);
     
