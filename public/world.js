@@ -4,18 +4,19 @@ const socket = io();
 const canvas = document.getElementById("worldCanvas");
 const ctx = canvas.getContext("2d");
 
-// --- Jogador local ---
+// --- Player local (com classe) ---
 const playerClass = localStorage.getItem("playerClass") || "humano";
 const playerImg = new Image();
-playerImg.src = `./${playerClass}.png`;
+playerImg.src = `./${playerClass}.png`; // ou "./images/${playerClass}.png" se usar pasta images
 
 let player = {
-    x: 200,
-    y: 200,
-    width: 48,
-    height: 48,
-    name: "Eu",
-    direction: "right"
+  x: 200,
+  y: 200,
+  width: 48,
+  height: 48,
+  name: "Eu",
+  direction: "right",
+  class: playerClass
 };
 
 // --- Outros jogadores ---
@@ -35,90 +36,97 @@ document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 const mapWidth = 3000;
 const mapHeight = 3000;
 
-// --- Funções ---
+// --- Movimentar e enviar pro servidor ---
 function movePlayer() {
-    let speed = 5;
-    let newX = player.x;
-    let newY = player.y;
+  let speed = 5;
+  let newX = player.x;
+  let newY = player.y;
 
-    if (keys["w"]) newY -= speed;
-    if (keys["s"]) newY += speed;
-    if (keys["a"]) { newX -= speed; player.direction = "left"; }
-    if (keys["d"]) { newX += speed; player.direction = "right"; }
+  if (keys["w"]) newY -= speed;
+  if (keys["s"]) newY += speed;
+  if (keys["a"]) { newX -= speed; player.direction = "left"; }
+  if (keys["d"]) { newX += speed; player.direction = "right"; }
 
-    if (!checkCollision(newX, newY)) {
-        player.x = newX;
-        player.y = newY;
-    }
+  if (!checkCollision(newX, newY)) {
+    player.x = newX;
+    player.y = newY;
+  }
 
-    socket.emit("playerMove", player);
+  socket.emit("playerMove", player);
 }
 
 function checkCollision(newX, newY) {
-    if (newX < 0 || newX + player.width > mapWidth) return true;
-    if (newY < 0 || newY + player.height > mapHeight) return true;
+  if (newX < 0 || newX + player.width > mapWidth) return true;
+  if (newY < 0 || newY + player.height > mapHeight) return true;
 
-    for (let t of trees) {
-        if (newX + player.width > t.x && newX < t.x + t.width &&
-            newY + player.height > t.y && newY < t.y + t.height) {
-            return true;
-        }
+  for (let t of trees) {
+    if (newX + player.width > t.x && newX < t.x + t.width &&
+        newY + player.height > t.y && newY < t.y + t.height) {
+      return true;
     }
-    return false;
+  }
+
+  return false;
 }
 
+// --- Desenhar jogador com espelhamento ---
 function drawPlayer(px, py, pImg, pDir) {
-    ctx.save();
-    if (pDir === "left") {
-        ctx.translate(px + player.width / 2, py + player.height / 2);
-        ctx.scale(-1, 1);
-        ctx.drawImage(pImg, -player.width / 2, -player.height / 2, player.width, player.height);
-    } else {
-        ctx.drawImage(pImg, px, py, player.width, player.height);
-    }
-    ctx.restore();
+  ctx.save();
+  if (pDir === "left") {
+    ctx.translate(px + player.width / 2, py + player.height / 2);
+    ctx.scale(-1, 1);
+    ctx.drawImage(pImg, -player.width / 2, -player.height / 2, player.width, player.height);
+  } else {
+    ctx.drawImage(pImg, px, py, player.width, player.height);
+  }
+  ctx.restore();
 }
 
+// --- Desenhar mundo ---
 function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const offsetX = player.x - canvas.width / 2;
-    const offsetY = player.y - canvas.height / 2;
+  const offsetX = player.x - canvas.width / 2;
+  const offsetY = player.y - canvas.height / 2;
 
-    // Chão
-    ctx.fillStyle = "#2c8c2c";
-    ctx.fillRect(-offsetX, -offsetY, mapWidth, mapHeight);
+  // chão
+  ctx.fillStyle = "#2c8c2c";
+  ctx.fillRect(-offsetX, -offsetY, mapWidth, mapHeight);
 
-    // Árvores
-    for (let t of trees) {
-        ctx.drawImage(treeImg, t.x - offsetX, t.y - offsetY, 60, 80);
-    }
+  // árvores
+  for (let t of trees) {
+    ctx.drawImage(treeImg, t.x - offsetX, t.y - offsetY, 60, 80);
+  }
 
-    // Jogadores
-    for (let id in worldPlayers) {
-        let p = worldPlayers[id];
-        let imgToDraw = (id === socket.id) ? playerImg : playerImg; // depois pode ter skins dos outros
-        drawPlayer(p.x - offsetX, p.y - offsetY, imgToDraw, (p.direction || "right"));
-        ctx.fillStyle = "white";
-        ctx.fillText(p.name || "Player", p.x - offsetX - 15, p.y - offsetY - 10);
-    }
+  // todos os jogadores
+  for (let id in worldPlayers) {
+    let p = worldPlayers[id];
+
+    // carregar sprite da classe
+    let img = new Image();
+    img.src = `./${p.class}.png`; // assume que cada jogador tem a classe salva
+
+    drawPlayer(p.x - offsetX, p.y - offsetY, img, p.direction || "right");
+    ctx.fillStyle = "white";
+    ctx.fillText(p.name || "Player", p.x - offsetX - 15, p.y - offsetY - 10);
+  }
 }
 
-// --- Socket.io ---
+// --- socket.io ---
 socket.on("worldState", data => {
-    trees = data.trees || [];
-    worldPlayers = data.worldPlayers || {};
+  trees = data.trees || [];
+  worldPlayers = data.worldPlayers || {};
 });
 
 socket.on("worldPlayersUpdate", data => {
-    worldPlayers = data;
+  worldPlayers = data;
 });
 
-// --- Game loop ---
+// --- loop ---
 function gameLoop() {
-    movePlayer();
-    draw();
-    requestAnimationFrame(gameLoop);
+  movePlayer();
+  draw();
+  requestAnimationFrame(gameLoop);
 }
 
 gameLoop();
