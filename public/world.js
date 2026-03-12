@@ -1,19 +1,11 @@
 const socket = io();
 
-// --- Jogador local ---
-let player = { x: 200, y: 200, name: "Eu", width: 30, height: 30 };
-
-// --- Outros jogadores ---
-let worldPlayers = {};
-
 // --- Canvas ---
-let canvas = document.getElementById("worldCanvas");
-let ctx = canvas.getContext("2d");
+const canvas = document.getElementById("worldCanvas");
+const ctx = canvas.getContext("2d");
 
-// Pega a classe salva no house
-const playerClass = localStorage.getItem("playerClass") || "humano"; // humano como default
-
-// Cria a imagem do jogador
+// --- Jogador local ---
+const playerClass = localStorage.getItem("playerClass") || "humano";
 const playerImg = new Image();
 playerImg.src = `./images/${playerClass}.png`;
 
@@ -22,8 +14,18 @@ let player = {
     y: 200,
     width: 48,
     height: 48,
-    direction: "right" // inicial
+    name: "Eu",
+    direction: "right"
 };
+
+// --- Outros jogadores ---
+let worldPlayers = {};
+
+// --- Árvores ---
+const treeImg = new Image();
+treeImg.src = "tree.png";
+let trees = [];
+
 // --- Teclado ---
 const keys = {};
 document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
@@ -33,92 +35,90 @@ document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 const mapWidth = 3000;
 const mapHeight = 3000;
 
-// --- Árvores ---
-const treeImg = new Image();
-treeImg.src = "tree.png"; // PNG transparente
-let trees = []; // começa vazio, será preenchido pelo servidor
-
-// --- Recebe estado inicial do mundo ---
-socket.on("worldState", data => {
-    trees = data.trees || [];
-    worldPlayers = data.worldPlayers || {};
-});
-
-// --- Atualização dos jogadores ---
-socket.on("worldPlayersUpdate", data => {
-    worldPlayers = data;
-});
-
-// --- Colisão com mapa e árvores ---
-function checkCollision(newX, newY) {
-    // Bordas do mapa
-    if (newX < 0 || newX + player.width > mapWidth) return true;
-    if (newY < 0 || newY + player.height > mapHeight) return true;
-
-    // Árvores
-    for (let t of (trees || [])) {
-        if (newX + player.width > t.x && newX < t.x + t.width &&
-            newY + player.height > t.y && newY < t.y + t.height) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-// --- Atualização local ---
-function update() {
+// --- Funções ---
+function movePlayer() {
     let speed = 5;
     let newX = player.x;
     let newY = player.y;
 
     if (keys["w"]) newY -= speed;
     if (keys["s"]) newY += speed;
-    if (keys["a"]) newX -= speed;
-    if (keys["d"]) newX += speed;
+    if (keys["a"]) { newX -= speed; player.direction = "left"; }
+    if (keys["d"]) { newX += speed; player.direction = "right"; }
 
     if (!checkCollision(newX, newY)) {
         player.x = newX;
         player.y = newY;
     }
 
-    // Envia posição para o servidor
     socket.emit("playerMove", player);
 }
 
-// --- Desenhar tudo ---
+function checkCollision(newX, newY) {
+    if (newX < 0 || newX + player.width > mapWidth) return true;
+    if (newY < 0 || newY + player.height > mapHeight) return true;
+
+    for (let t of trees) {
+        if (newX + player.width > t.x && newX < t.x + t.width &&
+            newY + player.height > t.y && newY < t.y + t.height) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function drawPlayer(px, py, pImg, pDir) {
+    ctx.save();
+    if (pDir === "left") {
+        ctx.translate(px + player.width / 2, py + player.height / 2);
+        ctx.scale(-1, 1);
+        ctx.drawImage(pImg, -player.width / 2, -player.height / 2, player.width, player.height);
+    } else {
+        ctx.drawImage(pImg, px, py, player.width, player.height);
+    }
+    ctx.restore();
+}
+
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Câmera centralizada no jogador local
     const offsetX = player.x - canvas.width / 2;
     const offsetY = player.y - canvas.height / 2;
 
-    // Chão verde
+    // Chão
     ctx.fillStyle = "#2c8c2c";
     ctx.fillRect(-offsetX, -offsetY, mapWidth, mapHeight);
 
     // Árvores
-    for (let t of (trees || [])) {
+    for (let t of trees) {
         ctx.drawImage(treeImg, t.x - offsetX, t.y - offsetY, 60, 80);
     }
 
     // Jogadores
     for (let id in worldPlayers) {
         let p = worldPlayers[id];
-        ctx.fillStyle = (id === socket.id) ? "blue" : "red";
-        ctx.fillRect(p.x - offsetX, p.y - offsetY, player.width, player.height);
+        let imgToDraw = (id === socket.id) ? playerImg : playerImg; // depois pode ter skins dos outros
+        drawPlayer(p.x - offsetX, p.y - offsetY, imgToDraw, (p.direction || "right"));
         ctx.fillStyle = "white";
         ctx.fillText(p.name || "Player", p.x - offsetX - 15, p.y - offsetY - 10);
     }
 }
 
-// --- Loop do jogo ---
+// --- Socket.io ---
+socket.on("worldState", data => {
+    trees = data.trees || [];
+    worldPlayers = data.worldPlayers || {};
+});
+
+socket.on("worldPlayersUpdate", data => {
+    worldPlayers = data;
+});
+
+// --- Game loop ---
 function gameLoop() {
-    update();
+    movePlayer();
     draw();
     requestAnimationFrame(gameLoop);
 }
 
-// --- Começa o jogo ---
 gameLoop();
