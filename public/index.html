@@ -145,6 +145,8 @@
     <div class="menuBtn" id="btnArena"><h2>ARENA</h2><p>Ir para batalhas</p></div>
     <div class="menuBtn" id="btnFriends"><h2>AMIGOS</h2><p>Gerenciar convites e adicionar</p></div>
     <div class="menuBtn" id="btnHouse"><h2>CASA</h2><p>Inventário e trocar classe</p></div>
+    <button id="btnOpenWorld">Mundo Aberto</button>
+    <div class="menuBtn" id="btnOpenWorld"><h2>MUNDO ABERTO</h2><p>CACE MONSTROS E GANHE XP!</p></div>
   </div>
 
   <!-- ARENA -->
@@ -188,6 +190,25 @@
       <div id="inventory">Nenhum item.</div>
     </div>
   </div>
+
+
+<!-- OPEN WORLD -->
+<div id="openworld" class="screen">
+  <h2>🌍 Mundo Aberto</h2>
+
+  <div style="width:100%; max-width:720px;">
+
+    <canvas id="worldCanvas" width="720" height="400"
+    style="background:#111; border:2px solid #444; border-radius:8px;">
+    </canvas>
+
+    <p style="color:var(--muted); font-size:13px; margin-top:10px;">
+      Use W A S D para andar
+    </p>
+
+  </div>
+</div>
+  
 
   <footer>Feito por Caio ⚡</footer>
 
