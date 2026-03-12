@@ -17,23 +17,10 @@ const menu = document.getElementById("menu");
 const arena = document.getElementById("arena");
 const friends = document.getElementById("friends");
 const house = document.getElementById("house");
-const btnWorld = document.getElementById("btnWorld");
-const world = document.getElementById("world");
 
-// Inicializar btnWorld com null check
-if (btnWorld) {
-  btnWorld.onclick = () => {
-    document.querySelectorAll(".screen").forEach(s => {
-      s.style.display = "none";
-    });
-    if (world) {
-      world.style.display = "flex";
-    }
-    if (typeof startWorld === "function") {
-      startWorld();
-    }
-  };
-}
+
+
+
 
 const chatInput = document.getElementById("chatInput");
 const sendChat = document.getElementById("sendChat");
