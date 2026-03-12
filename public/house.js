@@ -1,81 +1,90 @@
-const socket = io();
+const socket = io()
 
-// Jogador local
-let player = { x: 400, y: 400, width: 30, height: 30 };
+// jogador local
+let player = { x: 400, y: 400, name: "Eu" }
 
-// Canvas
-let canvas = document.getElementById("houseCanvas");
-let ctx = canvas.getContext("2d");
+// multiplayer dentro da casa
+let housePlayers = {}
 
-// Teclado
-const keys = {};
-document.addEventListener("keydown", e => keys[e.key] = true);
-document.addEventListener("keyup", e => keys[e.key] = false);
+// canvas
+let canvas = document.getElementById("houseCanvas")
+let ctx = canvas.getContext("2d")
 
-// Paredes da casa (x, y, largura, altura)
-const walls = [
-    { x: 0, y: 0, width: 800, height: 20 },  // topo
-    { x: 0, y: 480, width: 800, height: 20 }, // fundo
-    { x: 0, y: 0, width: 20, height: 500 }, // esquerda
-    { x: 780, y: 0, width: 20, height: 500 } // direita
-];
+// teclado
+const keys = {}
+document.addEventListener("keydown", e => keys[e.key] = true)
+document.addEventListener("keyup", e => keys[e.key] = false)
 
-// Porta de saída (centro da parede inferior)
-const door = { x: 380, y: 480, width: 40, height: 20 };
+// recebe posição de todos jogadores do servidor
+socket.on("housePlayersUpdate", (data) => housePlayers = data)
 
-// Função para colisão retângulo
-function checkCollision(a, b) {
-    return !(a.x + a.width < b.x || a.x > b.x + b.width ||
-             a.y + a.height < b.y || a.y > b.y + b.height);
+// colisão paredes internas
+function checkCollision(x, y) {
+    // limites simples da casa (paredes)
+    const padding = 10
+    if(x < padding) return true
+    if(x > 770) return true
+    if(y < padding) return true
+    if(y > 470) return true
+    return false
 }
 
-// Atualização do jogador
+// atualização local
 function update() {
-    let speed = 5;
-    let nextPos = { ...player };
+    let speed = 5
+    let nextX = player.x
+    let nextY = player.y
 
-    if(keys["w"]) nextPos.y -= speed;
-    if(keys["s"]) nextPos.y += speed;
-    if(keys["a"]) nextPos.x -= speed;
-    if(keys["d"]) nextPos.x += speed;
+    if(keys["w"]) nextY -= speed
+    if(keys["s"]) nextY += speed
+    if(keys["a"]) nextX -= speed
+    if(keys["d"]) nextX += speed
 
-    // Checa colisão com paredes
-    let collided = walls.some(wall => checkCollision(nextPos, wall));
-    if(!collided) player = nextPos;
-
-    // Checa colisão com porta (saida)
-    if(checkCollision(player, door)) {
-        window.location.href = "world.html"; // volta para o mundo
+    if(!checkCollision(nextX, nextY)) {
+        player.x = nextX
+        player.y = nextY
     }
 
-    // Envia posição para servidor se quiser multiplayer dentro da casa
-    // socket.emit("playerMoveInHouse", player);
+    // detecta porta de saída (parte de baixo da casa)
+    if(player.y >= 460) {
+        // envia evento pro servidor para voltar ao mundo
+        socket.emit("exitHouse", player)
+    }
+
+    // envia posição para o servidor
+    socket.emit("houseMove", player)
 }
 
-// Desenhar a casa
+// desenha todos jogadores
 function draw() {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.clearRect(0,0,canvas.width,canvas.height)
 
-    // chão (já azul pelo background)
-    
-    // paredes
-    ctx.fillStyle = "black";
-    walls.forEach(wall => ctx.fillRect(wall.x, wall.y, wall.width, wall.height));
+    // chão azul
+    ctx.fillStyle = "blue"
+    ctx.fillRect(0,0,canvas.width,canvas.height)
 
-    // porta
-    ctx.fillStyle = "brown";
-    ctx.fillRect(door.x, door.y, door.width, door.height);
+    // paredes pretas
+    ctx.fillStyle = "black"
+    ctx.fillRect(0,0,10,500)    // esquerda
+    ctx.fillRect(790,0,10,500)  // direita
+    ctx.fillRect(0,0,800,10)    // topo
+    ctx.fillRect(0,0,800,500)   // base (menos porta, se quiser pode desenhar porta visual)
 
-    // jogador
-    ctx.fillStyle = "blue";
-    ctx.fillRect(player.x, player.y, player.width, player.height);
+    // jogadores
+    for(let id in housePlayers){
+        let p = housePlayers[id]
+        ctx.fillStyle = (id === socket.id) ? "green" : "red"
+        ctx.fillRect(p.x - 15, p.y - 15, 30, 30)
+        ctx.fillStyle = "white"
+        ctx.fillText(p.name || "Player", p.x - 15, p.y - 20)
+    }
 }
 
-// Loop
+// loop do jogo
 function gameLoop() {
-    update();
-    draw();
-    requestAnimationFrame(gameLoop);
+    update()
+    draw()
+    requestAnimationFrame(gameLoop)
 }
 
-gameLoop();
+gameLoop()
