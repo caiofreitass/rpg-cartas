@@ -52,7 +52,13 @@ function movePlayer() {
     player.y = newY;
   }
 
-  socket.emit("playerMove", player);
+  // envia para o servidor, incluindo a classe
+  socket.emit("playerMove", {
+    x: player.x,
+    y: player.y,
+    direction: player.direction,
+    class: player.class  // <-- importante, sua classe/skin
+  });
 }
 
 function checkCollision(newX, newY) {
