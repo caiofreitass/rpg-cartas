@@ -347,7 +347,16 @@ function updateInventoryUI(arr) {
   });
 }
 
+// iniciar mundo
 
+function startWorld(){
+
+  canvas = document.getElementById("worldCanvas")
+  ctx = canvas.getContext("2d")
+
+  console.log("Mundo aberto iniciado")
+
+}
 
 // esconder/mostrar inicialmente
 if (loginPanel) loginPanel.style.display = "flex";
