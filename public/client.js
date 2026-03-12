@@ -157,6 +157,7 @@ socket.on("classesData", data => {
       const btn = document.createElement("button");
       btn.className = "classButton";
       btn.textContent = `${classEmojis[cls] || ""} ${cls}`;
+      localStorage.setItem("playerClass", cls);  // <- aqui salva para o mundo aberto
       btn.onclick = () => {
         socket.emit("setClass", cls);
         houseClasseDisplay.textContent = cls;
