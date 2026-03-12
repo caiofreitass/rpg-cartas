@@ -1,141 +1,109 @@
-const socket = io()
+// configurações
+const NUM_TREES = 50
+const NUM_HOUSES = 3
 
-// jogador local
-let player = { x: 200, y: 200, name: "Eu", width: 30, height: 30 }
-
-// outros jogadores
-let worldPlayers = {}
-
-// canvas
-let canvas = document.getElementById("worldCanvas")
-let ctx = canvas.getContext("2d")
-
-// teclado
-const keys = {}
-document.addEventListener("keydown", e => keys[e.key] = true)
-document.addEventListener("keyup", e => keys[e.key] = false)
-
-// mapa
-const mapWidth = 3000
-const mapHeight = 3000
-
-// árvores
+// imagens
 const treeImg = new Image()
-treeImg.src = "tree.png" // PNG com fundo transparente
-let trees = []
+treeImg.src = "/images/tree.png"
 
-// função para gerar árvores aleatórias
-function generateTrees(qty = 50) {
-    trees = []
-    for(let i=0;i<qty;i++){
-        const x = Math.random() * (mapWidth - 60) + 30
-        const y = Math.random() * (mapHeight - 60) + 30
-        trees.push({ x, y, width: 40, height: 60 }) // hitbox menor que imagem
-    }
-}
-
-// gerar 50 árvores por padrão
-generateTrees(50)
-
-// recebe posição de todos jogadores do servidor
-socket.on("worldPlayersUpdate", (data) => {
-    worldPlayers = data
-})
-
-
-// imagem da vila
 const villageImg = new Image()
-villageImg.src = "vila.png"
+villageImg.src = "/images/vila.png"
 
-// define posição e tamanho da vila
-const village = { x: 1000, y: 1500, width: 200, height: 200, doorX: 180, doorY: 180, doorWidth: 40, doorHeight: 20 }
-
-// na função checkCollision ou update, detecta porta
-function checkVillageDoor() {
-    // porta: parte de baixo da vila
-    const px = player.x
-    const py = player.y
-    const doorGlobalX = village.x + village.doorX
-    const doorGlobalY = village.y + village.doorY
-    if(px + player.width > doorGlobalX &&
-       px < doorGlobalX + village.doorWidth &&
-       py + player.height > doorGlobalY &&
-       py < doorGlobalY + village.doorHeight){
-        // teleportar para house.html
-        window.location.href = `house.html?playerId=${socket.id}`
-    }
+// --- Arvores ---
+let trees = []
+for(let i=0;i<NUM_TREES;i++){
+    trees.push({
+        x: Math.random()*1800+100,
+        y: Math.random()*1800+100,
+        width: 60,
+        height: 80
+    })
 }
 
-
-// colisão com mapa e árvores
-function checkCollision(newX, newY) {
-    // bordas do mapa
-    if(newX < 0 || newX + player.width > mapWidth) return true
-    if(newY < 0 || newY + player.height > mapHeight) return true
-
-    // árvores
-    for(let t of trees){
-        if(newX + player.width > t.x && newX < t.x + t.width &&
-           newY + player.height > t.y && newY < t.y + t.height){
-            return true
-        }
-    }
-    return false
+// --- Vilas ---
+let villages = []
+for(let i=0;i<NUM_HOUSES;i++){
+    const w = 200
+    const h = 150
+    villages.push({
+        x: Math.random()*(2000-w),
+        y: Math.random()*(2000-h),
+        width: w,
+        height: h
+    })
 }
 
-// atualização local
-function update() {
+// função update
+function update(){
     let speed = 5
-    let newX = player.x
-    let newY = player.y
+    if(keys["w"]) player.y -= speed
+    if(keys["s"]) player.y += speed
+    if(keys["a"]) player.x -= speed
+    if(keys["d"]) player.x += speed
 
-    if(keys["w"]) newY -= speed
-    if(keys["s"]) newY += speed
-    if(keys["a"]) newX -= speed
-    if(keys["d"]) newX += speed
+    // colisão mapa (2000x2000)
+    if(player.x < 0) player.x = 0
+    if(player.y < 0) player.y = 0
+    if(player.x > 2000-30) player.x = 2000-30
+    if(player.y > 2000-30) player.y = 2000-30
 
-    if(!checkCollision(newX, newY)){
-        player.x = newX
-        player.y = newY
+    // colisão com árvores
+    for(let t of trees){
+        if(player.x+30 > t.x && player.x < t.x+t.width &&
+           player.y+30 > t.y && player.y < t.y+t.height){
+               // simples: trava jogador
+               if(keys["w"]) player.y += speed
+               if(keys["s"]) player.y -= speed
+               if(keys["a"]) player.x += speed
+               if(keys["d"]) player.x -= speed
+           }
+    }
+
+    // colisão com porta das vilas
+    for(let v of villages){
+        const door = {
+            x: v.x + v.width/2 - 20, // porta central embaixo
+            y: v.y + v.height - 30,
+            width: 40,
+            height: 30
+        }
+        if(player.x + 30 > door.x && player.x < door.x + door.width &&
+           player.y + 30 > door.y && player.y < door.y + door.height){
+            window.location.href = "house.html"
+        }
     }
 
     // envia posição para o servidor
     socket.emit("playerMove", player)
 }
 
-// desenha todos jogadores
-function draw() {
+// função draw
+function draw(){
     ctx.clearRect(0,0,canvas.width,canvas.height)
 
-    // câmera centralizada no jogador local
     const offsetX = player.x - canvas.width/2
     const offsetY = player.y - canvas.height/2
 
     // chão verde
-    ctx.fillStyle = "#2c8c2c"
-    ctx.fillRect(-offsetX, -offsetY, mapWidth, mapHeight)
+    ctx.fillStyle = "#3cb043"
+    ctx.fillRect(-offsetX, -offsetY, 2000, 2000)
 
-    // desenhar árvores
+    // desenha árvores
     for(let t of trees){
-        ctx.drawImage(treeImg, t.x - offsetX, t.y - offsetY, 60, 80) // tamanho da imagem maior
-        // ctx.strokeStyle = "red"; ctx.strokeRect(t.x - offsetX, t.y - offsetY, t.width, t.height) // opcional: ver hitbox
+        ctx.drawImage(treeImg, t.x - offsetX, t.y - offsetY, t.width, t.height)
+    }
+
+    // desenha vilas
+    for(let v of villages){
+        ctx.drawImage(villageImg, v.x - offsetX, v.y - offsetY, v.width, v.height)
     }
 
     // jogadores
     for(let id in worldPlayers){
         let p = worldPlayers[id]
         ctx.fillStyle = (id === socket.id) ? "blue" : "red"
-        ctx.fillRect(p.x - offsetX, p.y - offsetY, player.width, player.height)
+        ctx.fillRect(p.x - offsetX, p.y - offsetY, 30, 30)
         ctx.fillStyle = "white"
         ctx.fillText(p.name || "Player", p.x - offsetX - 15, p.y - offsetY - 10)
     }
 }
-
-// loop do jogo
-function gameLoop() {
-    update()
-    draw()
-    requestAnimationFrame(gameLoop)
-}
-
-gameLoop()
