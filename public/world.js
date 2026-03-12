@@ -10,40 +10,53 @@ let worldPlayers = {}
 let canvas = document.getElementById("worldCanvas")
 let ctx = canvas.getContext("2d")
 
-// mapa
-const mapWidth = 3000
-const mapHeight = 3000
-
-// chão verde
-const groundColor = "#4CAF50"
-
 // teclado
 const keys = {}
 document.addEventListener("keydown", e => keys[e.key] = true)
 document.addEventListener("keyup", e => keys[e.key] = false)
 
+// mapa
+const mapWidth = 3000
+const mapHeight = 3000
+
 // árvores
 const treeImg = new Image()
-treeImg.src = "tree.png" // coloque tree.png na pasta public
-const trees = [
-    { x: 400, y: 400, width: 60, height: 80 },
-    { x: 800, y: 700, width: 60, height: 80 },
-    { x: 1500, y: 1200, width: 60, height: 80 },
-    { x: 2000, y: 1800, width: 60, height: 80 }
-]
+treeImg.src = "tree.png" // PNG com fundo transparente
+let trees = []
 
-// colisão AABB simples
-function collides(a, b){
-    return a.x < b.x + b.width &&
-           a.x + a.width > b.x &&
-           a.y < b.y + b.height &&
-           a.y + a.height > b.y
+// função para gerar árvores aleatórias
+function generateTrees(qty = 50) {
+    trees = []
+    for(let i=0;i<qty;i++){
+        const x = Math.random() * (mapWidth - 60) + 30
+        const y = Math.random() * (mapHeight - 60) + 30
+        trees.push({ x, y, width: 40, height: 60 }) // hitbox menor que imagem
+    }
 }
+
+// gerar 50 árvores por padrão
+generateTrees(50)
 
 // recebe posição de todos jogadores do servidor
 socket.on("worldPlayersUpdate", (data) => {
     worldPlayers = data
 })
+
+// colisão com mapa e árvores
+function checkCollision(newX, newY) {
+    // bordas do mapa
+    if(newX < 0 || newX + player.width > mapWidth) return true
+    if(newY < 0 || newY + player.height > mapHeight) return true
+
+    // árvores
+    for(let t of trees){
+        if(newX + player.width > t.x && newX < t.x + t.width &&
+           newY + player.height > t.y && newY < t.y + t.height){
+            return true
+        }
+    }
+    return false
+}
 
 // atualização local
 function update() {
@@ -56,24 +69,10 @@ function update() {
     if(keys["a"]) newX -= speed
     if(keys["d"]) newX += speed
 
-    // colisão com bordas do mapa
-    if(newX < 0) newX = 0
-    if(newY < 0) newY = 0
-    if(newX + player.width > mapWidth) newX = mapWidth - player.width
-    if(newY + player.height > mapHeight) newY = mapHeight - player.height
-
-    // colisão com árvores
-    for(let tree of trees){
-        if(collides({x:newX, y:newY, width:player.width, height:player.height}, tree)){
-            // simples: bloqueia movimento
-            newX = player.x
-            newY = player.y
-            break
-        }
+    if(!checkCollision(newX, newY)){
+        player.x = newX
+        player.y = newY
     }
-
-    player.x = newX
-    player.y = newY
 
     // envia posição para o servidor
     socket.emit("playerMove", player)
@@ -88,12 +87,13 @@ function draw() {
     const offsetY = player.y - canvas.height/2
 
     // chão verde
-    ctx.fillStyle = groundColor
+    ctx.fillStyle = "#2c8c2c"
     ctx.fillRect(-offsetX, -offsetY, mapWidth, mapHeight)
 
-    // árvores
-    for(let tree of trees){
-        ctx.drawImage(treeImg, tree.x - offsetX, tree.y - offsetY, tree.width, tree.height)
+    // desenhar árvores
+    for(let t of trees){
+        ctx.drawImage(treeImg, t.x - offsetX, t.y - offsetY, 60, 80) // tamanho da imagem maior
+        // ctx.strokeStyle = "red"; ctx.strokeRect(t.x - offsetX, t.y - offsetY, t.width, t.height) // opcional: ver hitbox
     }
 
     // jogadores
@@ -113,6 +113,4 @@ function gameLoop() {
     requestAnimationFrame(gameLoop)
 }
 
-treeImg.onload = () => {
-    gameLoop()
-}
+gameLoop()
