@@ -11,7 +11,10 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+
 app.use(express.static("public"));
+
+
 
 // --- Arquivo de usuários ---
 const usersFile = path.join(__dirname, "users.json");
@@ -434,6 +437,33 @@ io.on("connection", (socket) => {
     io.emit("updatePlayers", players);
     if (turnOrder.length > 0) io.emit("turnChanged", turnOrder[currentTurnIndex]);
   });
+
+const players = {}
+
+io.on("connection", socket => {
+
+console.log("player conectado", socket.id)
+
+players[socket.id] = {x:200, y:200}
+
+socket.on("playerMove", data => {
+
+players[socket.id] = data
+
+io.emit("players", players)
+
+})
+
+socket.on("disconnect", () => {
+
+delete players[socket.id]
+
+io.emit("players", players)
+
+})
+
+})
+  
 });
 
 const PORT = process.env.PORT || 3000;
