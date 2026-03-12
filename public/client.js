@@ -111,7 +111,7 @@ document.getElementById("btnHouse").onclick = () => {
   if (loggedIn) socket.emit("requestInventory");
 };
 document.getElementById("btnOpenWorld").onclick = () => {
-  window.location.href = "world.html";
+  window.open("world.html");
 };
 
 
