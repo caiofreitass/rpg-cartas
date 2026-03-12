@@ -1,34 +1,28 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-  <meta charset="UTF-8">
-  <title>Mundo Aberto</title>
+<meta charset="UTF-8">
+<title>Mundo Aberto</title>
 
-  <style>
-    body {
-      margin: 0;
-      background: #111;
-      overflow: hidden;
-    }
-    canvas {
-      display: block;
-      background: #222;
-    }
-  </style>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+  }
+  canvas {
+    display: block;
+    background: #222;
+  }
+</style>
+
 </head>
-
 <body>
 
-  <!-- O mapa do mundo aberto -->
-  <canvas id="worldCanvas" width="800" height="600"></canvas>
+  <canvas id="worldCanvas" width="800" height="500"></canvas>
 
-  <!-- Socket.IO precisa ser carregado primeiro -->
+  <!-- IMPORTANTE: socket.io antes do seu JS -->
   <script src="/socket.io/socket.io.js"></script>
-
-  <!-- Seu código do mundo já existente -->
   <script src="world.js"></script>
 
 </body>
-
 </html>
