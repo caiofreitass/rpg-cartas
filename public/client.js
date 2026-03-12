@@ -18,10 +18,6 @@ const arena = document.getElementById("arena");
 const friends = document.getElementById("friends");
 const house = document.getElementById("house");
 
-
-
-
-
 const chatInput = document.getElementById("chatInput");
 const sendChat = document.getElementById("sendChat");
 const chatMessages = document.getElementById("chatMessages");
@@ -35,28 +31,18 @@ const classDetails = document.getElementById("classDetails");
 const houseClasseDisplay = document.getElementById("houseClasseDisplay");
 const inventoryDiv = document.getElementById("inventory");
 
-// CHAT - Safe HTML rendering
-sendChat.addEventListener("click", () => {
+// CHAT
+sendChat.addEventListener("click", ()=> {
   const msg = chatInput.value.trim();
   if (msg !== "") {
     socket.emit("playerChat", msg);
     chatInput.value = "";
   }
 });
-
-chatInput.addEventListener("keypress", e => {
-  if (e.key === "Enter") sendChat.click();
-});
-
+chatInput.addEventListener("keypress", e => { if (e.key === "Enter") sendChat.click(); });
 socket.on("chatMessage", data => {
   const div = document.createElement("div");
-  const nameSpan = document.createElement("b");
-  nameSpan.style.color = "cyan";
-  nameSpan.textContent = data.name + ": ";
-  const textSpan = document.createElement("span");
-  textSpan.textContent = data.text;
-  div.appendChild(nameSpan);
-  div.appendChild(textSpan);
+  div.innerHTML = `<b style="color:cyan;">${data.name}:</b> ${data.text}`;
   chatMessages.appendChild(div);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 });
@@ -66,14 +52,13 @@ document.getElementById("btnRegister").onclick = () => {
   const u = document.getElementById("username").value.trim();
   const p = document.getElementById("password").value.trim();
   if (!u || !p) return alert("Preencha usuário e senha!");
-  socket.emit("register", { username: u, password: p });
+  socket.emit("register",{ username: u, password: p });
 };
-
 document.getElementById("btnLogin").onclick = () => {
   const u = document.getElementById("username").value.trim();
   const p = document.getElementById("password").value.trim();
   if (!u || !p) return alert("Preencha usuário e senha!");
-  socket.emit("login", { username: u, password: p });
+  socket.emit("login",{ username: u, password: p });
 };
 
 socket.on("registerResponse", r => {
@@ -91,6 +76,7 @@ socket.on("loginResponse", data => {
     currentUsername = document.getElementById("username").value.trim();
     loginPanel.style.display = "none";
     menu.style.display = "block";
+    // atualizar casa/inventory/friends
     houseClasseDisplay.textContent = data.classe || "Nenhuma";
     updateInventoryUI(data.inventory || []);
     updateFriendsUI(data.friends || [], data.pending || []);
@@ -104,11 +90,8 @@ document.getElementById("btnArena").onclick = () => {
   arena.style.display = "flex";
   friends.style.display = "none";
   house.style.display = "none";
-  if (chatMessages) {
-    chatMessages.innerHTML = "";
-  }
+  if (chatMessages) chatMessages.innerHTML = "";
 };
-
 document.getElementById("btnFriends").onclick = () => {
   menu.style.display = "none";
   arena.style.display = "none";
@@ -116,7 +99,6 @@ document.getElementById("btnFriends").onclick = () => {
   house.style.display = "none";
   if (loggedIn) socket.emit("requestFriendsData");
 };
-
 document.getElementById("btnHouse").onclick = () => {
   menu.style.display = "none";
   arena.style.display = "none";
@@ -130,7 +112,7 @@ document.getElementById("btnHouse").onclick = () => {
 const exitBtn = document.createElement("button");
 exitBtn.id = "exitArenaBtn";
 exitBtn.title = "Voltar ao menu";
-exitBtn.textContent = "🏠";
+exitBtn.innerHTML = "🏠";
 exitBtn.style.position = "absolute";
 exitBtn.style.left = "12px";
 exitBtn.style.top = "12px";
@@ -152,13 +134,11 @@ document.body.appendChild(exitBtn);
 function showExitBtn(show) {
   exitBtn.style.display = show ? "block" : "none";
 }
+document.getElementById("btnArena").addEventListener("click", ()=> showExitBtn(true));
+document.getElementById("btnFriends").addEventListener("click", ()=> showExitBtn(true));
+document.getElementById("btnHouse").addEventListener("click", ()=> showExitBtn(true));
 
-// Consolidated event listeners - removed duplicates
-document.getElementById("btnArena").addEventListener("click", () => showExitBtn(true));
-document.getElementById("btnFriends").addEventListener("click", () => showExitBtn(true));
-document.getElementById("btnHouse").addEventListener("click", () => showExitBtn(true));
-
-// CLASSES DATA
+// CLASSES DATA: botões escolhem direto
 socket.on("classesData", data => {
   classesData = data;
   if (classButtonsContainer) {
@@ -173,66 +153,25 @@ socket.on("classesData", data => {
         alert(`Classe ${cls} escolhida!`);
       };
       classButtonsContainer.appendChild(btn);
-  
     });
   }
 });
 
-function showClassDetails(cls){
-
-const data = classesData[cls]
-
-if(!data){
-console.log("Classe não encontrada:", cls)
-return
-}
-
-classDetails.innerHTML = ""
-
-const title = document.createElement("h4")
-title.textContent = cls
-title.style.marginBottom = "6px"
-
-classDetails.appendChild(title)
-
-if(data.buffs?.length){
-
-const buffsLabel = document.createElement("strong")
-buffsLabel.textContent = "Buffs:"
-classDetails.appendChild(buffsLabel)
-
-const buffsList = document.createElement("ul")
-
-data.buffs.forEach(buff=>{
-const li = document.createElement("li")
-li.textContent = `${buff.name}: ${buff.effect}`
-buffsList.appendChild(li)
-})
-
-classDetails.appendChild(buffsList)
-
-}
-
-if(data.abilities?.length){
-
-const abilitiesLabel = document.createElement("strong")
-abilitiesLabel.textContent = "Habilidades:"
-classDetails.appendChild(abilitiesLabel)
-
-data.abilities.forEach(ability=>{
-
-const div = document.createElement("div")
-div.className = "ability"
-
-div.textContent =
-`${ability.name} [${ability.type.toUpperCase()}] ${ability.value ? "- "+ability.value : ""}`
-
-classDetails.appendChild(div)
-
-})
-
-}
-
+function showClassDetails(cls) {
+  const data = classesData[cls];
+  if (!data) return;
+  let html = `<h4 style="margin:0 0 6px 0">${cls}</h4>`;
+  if (data.buffs && data.buffs.length > 0) {
+    html += "<strong>Buffs:</strong><ul>";
+    data.buffs.forEach(b => html += `<li>${b.name}: ${b.effect}</li>`);
+    html += "</ul>";
+  }
+  if (data.abilities && data.abilities.length > 0) {
+    html += "<strong>Habilidades:</strong><div>";
+    data.abilities.forEach(a => html += `<div class="ability">${a.name} [${a.type.toUpperCase()}] ${a.value ? '- ' + a.value : ''}</div>`);
+    html += "</div>";
+  }
+  classDetails.innerHTML = html;
 }
 
 // ARENA integration
@@ -242,64 +181,34 @@ socket.on("init", data => {
   playersData = data.players;
   renderPlayers();
 });
-
-socket.on("updatePlayers", players => {
-  playersData = players;
-  renderPlayers();
-});
-
+socket.on("updatePlayers", players => { playersData = players; renderPlayers(); });
 socket.on("turnChanged", turnId => {
   currentTurn = turnId;
   for (const id in playersData) {
     const p = playersData[id];
     if (p.buffs) {
-      p.buffs = p.buffs
-        .map(b => ({ ...b, remaining: b.remaining - 1 }))
-        .filter(b => b.remaining > 0);
+      p.buffs = p.buffs.map(b => ({ ...b, remaining: b.remaining - 1 })).filter(b => b.remaining > 0);
     }
   }
   renderPlayers();
   renderTurnIndicator();
 });
-
 socket.on("message", msg => addMessage(msg));
-socket.on("restartVotes", ({ votes, totalPlayers }) =>
-  addMessage(`🌀 Reinício: ${votes}/${totalPlayers} votos.`)
-);
+socket.on("restartVotes", ({ votes, totalPlayers }) => addMessage(`🌀 Reinício: ${votes}/${totalPlayers} votos.`));
 socket.on("gameRestarted", () => addMessage("♻️ O jogo foi reiniciado!"));
 
 function renderPlayers() {
   const container = document.getElementById("players");
   if (!container) return;
-  
   container.innerHTML = "";
-  
   for (const id in playersData) {
     const p = playersData[id];
     const emoji = p.id === "hunter" ? "🗡️" : (classEmojis[p.classe] || "❔");
     const turnPointer = id === currentTurn ? "👉 " : "";
-    const isCurrentTurn = id === currentTurn;
-    const textColor = p.alive ? "#fff" : "#777";
-    const bgColor = isCurrentTurn ? "rgba(255,255,255,0.04)" : "none";
-    
-    const playerDiv = document.createElement("div");
-    playerDiv.style.color = textColor;
-    playerDiv.style.background = bgColor;
-    playerDiv.style.borderRadius = "8px";
-    playerDiv.style.padding = "12px";
-    playerDiv.style.margin = "8px";
-    playerDiv.style.minWidth = "160px";
-    playerDiv.style.textAlign = "left";
-    
-    // Buffs
+    const style = `color:${p.alive ? "#fff" : "#777"};background:${id === currentTurn ? "rgba(255,255,255,0.04)" : "none"};border-radius:8px;padding:12px;margin:8px;min-width:160px;text-align:left;`;
+    let buffsText = "";
     if (p.buffs && p.buffs.length > 0) {
-      const buffsDiv = document.createElement("div");
-      buffsDiv.style.textAlign = "center";
-      buffsDiv.style.color = "#FFD700";
-      buffsDiv.style.fontSize = "0.9em";
-      buffsDiv.style.marginBottom = "6px";
-      
-      buffsDiv.textContent = p.buffs.map(b => {
+      buffsText = p.buffs.map(b => {
         let bEmoji = "";
         if (b.type === "lobisomem") bEmoji = "🐺";
         else if (b.type === "vampiro") bEmoji = "🧛‍♂️";
@@ -307,31 +216,11 @@ function renderPlayers() {
         else if (b.type === "sugavida") bEmoji = "✨";
         return `${bEmoji}(${b.remaining})`;
       }).join(" ");
-      
-      playerDiv.appendChild(buffsDiv);
+      buffsText = `<div style="text-align:center;color:#FFD700;font-size:0.9em;margin-bottom:6px;">${buffsText}</div>`;
     }
-    
-    // Player info
-    const infoDiv = document.createElement("div");
-    infoDiv.textContent = `${turnPointer}${emoji} `;
-    const nameSpan = document.createElement("b");
-    nameSpan.textContent = p.name;
-    infoDiv.appendChild(nameSpan);
-    const classeSpan = document.createElement("span");
     const classeDisplay = p.classe || (p.id === "hunter" ? "Caçador" : "??");
-    classeSpan.textContent = ` (${classeDisplay})`;
-    infoDiv.appendChild(classeSpan);
-    playerDiv.appendChild(infoDiv);
-    
-    // HP
-    const hpDiv = document.createElement("div");
-    hpDiv.style.marginTop = "6px";
-    hpDiv.textContent = `❤️ ${p.hp}`;
-    playerDiv.appendChild(hpDiv);
-    
-    container.appendChild(playerDiv);
+    container.innerHTML += `<div style="${style}">${buffsText}${turnPointer}${emoji} <b>${p.name}</b> (${classeDisplay})<div style="margin-top:6px">❤️ ${p.hp}</div></div>`;
   }
-  
   renderActions();
 }
 
@@ -343,93 +232,38 @@ function renderTurnIndicator() {
 
 function renderActions() {
   if (!loggedIn) return;
-  
   const container = document.getElementById("actions");
   if (!container) return;
-  
   container.innerHTML = "";
-  
   const me = playersData[playerId];
   if (!me || !me.classe || !me.alive) return;
-  
   if (currentTurn === playerId && classesData[me.classe]) {
-    const classData = classesData[me.classe];
-    const abilities = classData.abilities || [];
-    
-    // Ability select
- const abilitySelect = document.createElement("select");
-abilitySelect.style.marginRight = "8px";
-abilitySelect.style.padding = "6px";
-
-if (abilities && abilities.length > 0) {
-
-  abilities.forEach((a, i) => {
-    const opt = document.createElement("option");
-    opt.value = i;
-    opt.textContent = a.name;
-    abilitySelect.appendChild(opt);
-  });
-
-}
-
-
-classDetails.appendChild(abilitySelect);
-    
-    // Target select
-    const targetSelect = document.createElement("select");
-    targetSelect.style.marginRight = "8px";
-    targetSelect.style.padding = "6px";
-    
-    const targets = Object.values(playersData).filter(p => p.alive && p.id !== playerId);
-    
-    if (targets.length === 0) {
+    const abilitySelect = document.createElement("select");
+    abilitySelect.style.marginRight = "8px"; abilitySelect.style.padding = "6px";
+    classesData[me.classe].forEach((a, i) => {
       const opt = document.createElement("option");
-      opt.textContent = "Nenhum alvo vivo";
-      opt.disabled = true;
-      targetSelect.appendChild(opt);
+      opt.value = i + 1;
+      opt.textContent = a.name;
+      abilitySelect.appendChild(opt);
+    });
+    const targetSelect = document.createElement("select");
+    targetSelect.style.marginRight = "8px"; targetSelect.style.padding = "6px";
+    const targets = Object.values(playersData).filter(p => p.alive && p.id !== playerId);
+    if (targets.length === 0) {
+      const opt = document.createElement("option"); opt.textContent = "Nenhum alvo vivo"; opt.disabled = true; targetSelect.appendChild(opt);
     } else {
-      targets.forEach(p => {
-        const opt = document.createElement("option");
-        opt.value = p.id;
-        opt.textContent = p.name;
-        targetSelect.appendChild(opt);
-      });
+      targets.forEach(p => { const opt = document.createElement("option"); opt.value = p.id; opt.textContent = p.name; targetSelect.appendChild(opt); });
     }
-    
-    // Play button
-    const playBtn = document.createElement("button");
-    playBtn.textContent = "⚔️ Usar Habilidade";
-    playBtn.onclick = () => {
-      const abilityIndex = parseInt(abilitySelect.value);
-      const targetId = targetSelect.value;
-      if (!targetId) return alert("Selecione um alvo!");
-      socket.emit("playAbility", { targetId, abilityIndex });
-    };
-    
-    container.appendChild(document.createTextNode("Habilidade: "));
-    container.appendChild(abilitySelect);
-    container.appendChild(document.createTextNode(" Alvo: "));
-    container.appendChild(targetSelect);
-    container.appendChild(playBtn);
+    const playBtn = document.createElement("button"); playBtn.textContent = "⚔️ Usar Habilidade";
+    playBtn.onclick = () => { const abilityIndex = parseInt(abilitySelect.value); const targetId = targetSelect.value; if (!targetId) return alert("Selecione um alvo!"); socket.emit("playAbility", { targetId, abilityIndex }); };
+    container.appendChild(document.createTextNode("Habilidade: ")); container.appendChild(abilitySelect);
+    container.appendChild(document.createTextNode(" Alvo: ")); container.appendChild(targetSelect); container.appendChild(playBtn);
   }
-  
-  // Restart button
-  const restartBtn = document.createElement("button");
-  restartBtn.textContent = "🔄 Reiniciar";
-  restartBtn.style.marginLeft = "8px";
-  restartBtn.onclick = () => socket.emit("restartVote");
+  const restartBtn = document.createElement("button"); restartBtn.textContent = "🔄 Reiniciar"; restartBtn.style.marginLeft = "8px"; restartBtn.onclick = () => socket.emit("restartVote");
   container.appendChild(restartBtn);
 }
 
-function addMessage(msg) {
-  const log = document.getElementById("log");
-  if (!log) return;
-  
-  const entry = document.createElement("div");
-  entry.textContent = msg;
-  log.appendChild(entry);
-  log.scrollTop = log.scrollHeight;
-}
+function addMessage(msg) { const log = document.getElementById("log"); if (!log) return; const entry = document.createElement("div"); entry.innerHTML = msg; log.appendChild(entry); log.scrollTop = log.scrollHeight; }
 
 // AMIGOS
 addFriendBtn.onclick = () => {
@@ -442,17 +276,11 @@ addFriendBtn.onclick = () => {
 socket.on("friendError", (text) => alert(text));
 socket.on("friendRequestSent", (name) => alert("Convite enviado para " + name));
 socket.on("incomingFriendRequest", (from) => {
-  if (friends.style.display === "flex") {
-    socket.emit("requestFriendsData");
-  } else {
-    alert(`Novo convite de ${from}`);
-  }
+  if (friends.style.display === "flex") socket.emit("requestFriendsData");
+  else alert(`Novo convite de ${from}`);
 });
 socket.on("friendAccepted", (name) => socket.emit("requestFriendsData"));
-socket.on("friendAcceptedByTarget", (who) => {
-  alert(`${who} aceitou seu convite!`);
-  socket.emit("requestFriendsData");
-});
+socket.on("friendAcceptedByTarget", (who) => { alert(`${who} aceitou seu convite!`); socket.emit("requestFriendsData"); });
 socket.on("friendDeclined", (name) => socket.emit("requestFriendsData"));
 
 socket.on("friendsData", ({ friends, pending, classe, inventory }) => {
@@ -466,33 +294,17 @@ socket.on("friendsData", ({ friends, pending, classe, inventory }) => {
 function updateFriendsUI(friendsArr, pendingArr) {
   friendsListDiv.innerHTML = "";
   pendingInvitesDiv.innerHTML = "";
-  
   (pendingArr || []).forEach(p => {
     const div = document.createElement("div");
     div.className = "friendItem";
-    
-    const left = document.createElement("div");
-    left.textContent = p;
-    
+    const left = document.createElement("div"); left.textContent = p;
     const right = document.createElement("div");
-    
-    const accept = document.createElement("button");
-    accept.textContent = "Aceitar";
-    accept.onclick = () => socket.emit("acceptFriendRequest", p);
-    
-    const decline = document.createElement("button");
-    decline.textContent = "Recusar";
-    decline.onclick = () => socket.emit("declineFriendRequest", p);
-    
-    right.appendChild(accept);
-    right.appendChild(decline);
-    
-    div.appendChild(left);
-    div.appendChild(right);
-    
+    const accept = document.createElement("button"); accept.textContent = "Aceitar"; accept.onclick = () => socket.emit("acceptFriendRequest", p);
+    const decline = document.createElement("button"); decline.textContent = "Recusar"; decline.onclick = () => socket.emit("declineFriendRequest", p);
+    right.appendChild(accept); right.appendChild(decline);
+    div.appendChild(left); div.appendChild(right);
     pendingInvitesDiv.appendChild(div);
   });
-  
   (friendsArr || []).forEach(f => {
     const div = document.createElement("div");
     div.className = "friendItem";
@@ -506,12 +318,10 @@ socket.on("inventoryData", (arr) => updateInventoryUI(arr || []));
 
 function updateInventoryUI(arr) {
   inventoryDiv.innerHTML = "";
-  
   if (!arr || arr.length === 0) {
     inventoryDiv.textContent = "Inventário vazio.";
     return;
   }
-  
   arr.forEach(item => {
     const d = document.createElement("div");
     d.textContent = "• " + item;
@@ -519,7 +329,7 @@ function updateInventoryUI(arr) {
   });
 }
 
-// Inicializar visibilidade
+// esconder/mostrar inicialmente
 if (loginPanel) loginPanel.style.display = "flex";
 if (menu) menu.style.display = "none";
 if (arena) arena.style.display = "none";
