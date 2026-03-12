@@ -365,6 +365,7 @@ function renderActions() {
       opt.value = i + 1;
       opt.textContent = a.name;
       abilitySelect.appendChild(opt);
+      classDetails.appendChild(abilitySelect);
     });
     
     // Target select
