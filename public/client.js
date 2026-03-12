@@ -111,16 +111,8 @@ document.getElementById("btnHouse").onclick = () => {
   if (loggedIn) socket.emit("requestInventory");
 };
 document.getElementById("btnOpenWorld").onclick = () => {
-  menu.style.display = "none";
-  openworld.style.display = "flex";
-  arena.style.display = "none";
-  friends.style.display = "none";
-  house.style.display = "none";
-  if (chatMessages) chatMessages.innerHTML = "";
-
-  startWorld();
+  window.location.href = "world.html";
 };
-
 
 
 
