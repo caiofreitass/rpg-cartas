@@ -2,71 +2,11 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Casa</title>
+<title>Casa Multiplayer</title>
 </head>
 <body>
 <canvas id="houseCanvas" width="800" height="500"></canvas>
 <script src="/socket.io/socket.io.js"></script>
-<script>
-const params = new URLSearchParams(window.location.search)
-const playerId = params.get("playerId")
-
-const canvas = document.getElementById("houseCanvas")
-const ctx = canvas.getContext("2d")
-
-let player = { x: 400, y: 400, width:30, height:30, name:"Eu" }
-const keys = {}
-document.addEventListener("keydown", e => keys[e.key] = true)
-document.addEventListener("keyup", e => keys[e.key] = false)
-
-// porta de saída (parte de baixo)
-const door = { x: 370, y: 480, width:60, height:20 }
-
-function update(){
-    let speed = 5
-    let newX = player.x
-    let newY = player.y
-    if(keys["w"]) newY -= speed
-    if(keys["s"]) newY += speed
-    if(keys["a"]) newX -= speed
-    if(keys["d"]) newX += speed
-
-    // colisão com bordas
-    if(newX >=0 && newX + player.width <= 800) player.x = newX
-    if(newY >=0 && newY + player.height <= 500) player.y = newY
-
-    // porta de saída
-    if(player.x + player.width > door.x &&
-       player.x < door.x + door.width &&
-       player.y + player.height > door.y &&
-       player.y < door.y + door.height){
-        window.location.href = "world.html"
-    }
-}
-
-function draw(){
-    ctx.clearRect(0,0,canvas.width,canvas.height)
-    // chão azul
-    ctx.fillStyle = "#0000aa"
-    ctx.fillRect(0,0,canvas.width,canvas.height)
-    // parede preta borda
-    ctx.strokeStyle = "black"
-    ctx.lineWidth = 20
-    ctx.strokeRect(0,0,canvas.width,canvas.height)
-    // porta
-    ctx.fillStyle = "brown"
-    ctx.fillRect(door.x, door.y, door.width, door.height)
-    // jogador
-    ctx.fillStyle = "blue"
-    ctx.fillRect(player.x, player.y, player.width, player.height)
-}
-
-function loop(){
-    update()
-    draw()
-    requestAnimationFrame(loop)
-}
-loop()
-</script>
+<script src="house.js"></script>
 </body>
 </html>
