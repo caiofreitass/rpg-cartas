@@ -11,6 +11,20 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// --- Mundo aberto ---
+const mapWidth = 3000;
+const mapHeight = 3000;
+let trees = [];
+
+function generateTrees(qty = 50) {
+    trees = [];
+    for (let i = 0; i < qty; i++) {
+        const x = Math.random() * (mapWidth - 60) + 30;
+        const y = Math.random() * (mapHeight - 60) + 30;
+        trees.push({ x, y, width: 40, height: 60 });
+    }
+}
+generateTrees(50);
 
 app.use(express.static("public"));
 
