@@ -358,17 +358,21 @@ function renderActions() {
     
     // Ability select
     const abilitySelect = document.createElement("select");
-    abilitySelect.style.marginRight = "8px";
-    abilitySelect.style.padding = "6px";
-    
-    abilities.forEach((a, i) => {
-      const opt = document.createElement("option");
-      opt.value = i + 1;
-      opt.textContent = a.name;
-      abilitySelect.appendChild(opt);
-      classDetails.appendChild(abilitySelect);
-      showClassDetails(cls)
-    });
+
+abilitySelect.style.marginRight = "8px";
+abilitySelect.style.padding = "6px";
+
+abilities.forEach((a,i)=>{
+
+const opt = document.createElement("option");
+opt.value = i+1;
+opt.textContent = a.name;
+
+abilitySelect.appendChild(opt);
+
+});
+
+classDetails.appendChild(abilitySelect);
     
     // Target select
     const targetSelect = document.createElement("select");
