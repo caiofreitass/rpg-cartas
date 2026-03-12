@@ -187,34 +187,20 @@ io.on("connection", (socket) => {
   // quando jogador entra no mundo aberto
 worldPlayers[socket.id] = { x: 200, y: 200, name: "Jogador" };
 
-// recebe movimentação do cliente
+// Recebe movimentação e envia para todos
 socket.on("playerMove", (data) => {
-  if (worldPlayers[socket.id]) {
-    worldPlayers[socket.id].x = data.x;
-    worldPlayers[socket.id].y = data.y;
-    io.emit("worldPlayersUpdate", worldPlayers); // envia para todos
-  }
+  worldPlayers[socket.id].x = data.x;
+  worldPlayers[socket.id].y = data.y;
+  io.emit("worldPlayersUpdate", worldPlayers); // todos recebem
 });
 
-// remove jogador ao desconectar
+// Remove jogador ao desconectar
 socket.on("disconnect", () => {
   delete worldPlayers[socket.id];
   io.emit("worldPlayersUpdate", worldPlayers);
 });
    
   
-    // jogador entra no mundo aberto
-  worldPlayers[socket.id] = { x: 200, y: 200 };
-
-  socket.on("playerMove", (data) => {
-    worldPlayers[socket.id] = data;
-    io.emit("worldPlayers", worldPlayers);
-  });
-
-  socket.on("disconnect", () => {
-    delete worldPlayers[socket.id];
-    io.emit("worldPlayers", worldPlayers);
-  });
 
   // CHAT
   socket.on("playerChat", (msg) => {
