@@ -74,15 +74,26 @@ socket.on("loginResponse", data => {
   const msg = document.getElementById("loginMsg");
   msg.style.color = data.success ? "#00ff00" : "#ff5555";
   msg.innerText = data.message;
+
   if (data.success) {
     loggedIn = true;
     currentUsername = document.getElementById("username").value.trim();
     loginPanel.style.display = "none";
     menu.style.display = "block";
-    // atualizar casa/inventory/friends
-    houseClasseDisplay.textContent = data.classe || "Nenhuma";
+
+    // --- SALVA A CLASSE NO LOCALSTORAGE ---
+    if (data.classe) {
+      localStorage.setItem("playerClass", data.classe);
+      houseClasseDisplay.textContent = data.classe;
+    } else {
+      localStorage.removeItem("playerClass");
+      houseClasseDisplay.textContent = "Nenhuma";
+    }
+
+    // atualizar inventory/friends
     updateInventoryUI(data.inventory || []);
     updateFriendsUI(data.friends || [], data.pending || []);
+
     socket.emit("setName", currentUsername);
   }
 });
