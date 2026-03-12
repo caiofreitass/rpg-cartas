@@ -7,7 +7,7 @@ let player = { x: 400, y: 400, name: "Eu", worldX: 0, worldY: 0 }
 const returnX = parseFloat(localStorage.getItem("returnX"))
 const returnY = parseFloat(localStorage.getItem("returnY"))
 if(!isNaN(returnX) && !isNaN(returnY)) {
-    player.x = returnX + 20 // desloca um pouco pra frente da porta
+    player.x = returnX + 20
     player.y = returnY
     localStorage.removeItem("returnX")
     localStorage.removeItem("returnY")
@@ -28,6 +28,7 @@ document.addEventListener("keyup", e => keys[e.key] = false)
 // configurações
 const NUM_TREES = 50
 const NUM_HOUSES = 3
+const MAP_SIZE = 2000
 
 // imagens
 const treeImg = new Image()
@@ -36,12 +37,24 @@ treeImg.src = "/images/tree.png"
 const villageImg = new Image()
 villageImg.src = "/images/vila.png"
 
+let imagesLoaded = 0
+const totalImages = 2
+
+treeImg.onload = () => { imagesLoaded++; startGameIfReady() }
+villageImg.onload = () => { imagesLoaded++; startGameIfReady() }
+
+function startGameIfReady(){
+    if(imagesLoaded === totalImages){
+        gameLoop()
+    }
+}
+
 // --- Arvores ---
 let trees = []
 for(let i=0;i<NUM_TREES;i++){
     trees.push({
-        x: Math.random()*1800 + 100,
-        y: Math.random()*1800 + 100,
+        x: Math.random() * (MAP_SIZE-100) + 50,
+        y: Math.random() * (MAP_SIZE-100) + 50,
         width: 60,
         height: 80
     })
@@ -53,18 +66,18 @@ for(let i=0;i<NUM_HOUSES;i++){
     const w = 200
     const h = 150
     villages.push({
-        x: Math.random()*(2000 - w),
-        y: Math.random()*(2000 - h),
+        x: Math.random() * (MAP_SIZE - w),
+        y: Math.random() * (MAP_SIZE - h),
         width: w,
         height: h
     })
 }
 
-// recebe posição de todos jogadores do servidor
+// multiplayer
 socket.on("worldPlayersUpdate", (data) => worldPlayers = data)
 
-// atualização local
-function update() {
+// função update
+function update(){
     let speed = 5
     let nextX = player.x
     let nextY = player.y
@@ -74,17 +87,16 @@ function update() {
     if(keys["a"]) nextX -= speed
     if(keys["d"]) nextX += speed
 
-    // colisão mapa (2000x2000)
+    // colisão mapa
     if(nextX < 0) nextX = 0
     if(nextY < 0) nextY = 0
-    if(nextX > 2000 - 30) nextX = 2000 - 30
-    if(nextY > 2000 - 30) nextY = 2000 - 30
+    if(nextX > MAP_SIZE - 30) nextX = MAP_SIZE - 30
+    if(nextY > MAP_SIZE - 30) nextY = MAP_SIZE - 30
 
-    // colisão com árvores
+    // colisão árvores
     for(let t of trees){
         if(nextX + 30 > t.x && nextX < t.x + t.width &&
            nextY + 30 > t.y && nextY < t.y + t.height){
-            // trava o movimento
             if(keys["w"]) nextY += speed
             if(keys["s"]) nextY -= speed
             if(keys["a"]) nextX += speed
@@ -92,14 +104,13 @@ function update() {
         }
     }
 
-    // atualiza posição do jogador
     player.x = nextX
     player.y = nextY
 
     // colisão com porta das vilas
     for(let v of villages){
         const door = {
-            x: v.x + v.width/2 - 20, // porta central embaixo
+            x: v.x + v.width/2 - 20,
             y: v.y + v.height - 30,
             width: 40,
             height: 30
@@ -107,11 +118,9 @@ function update() {
 
         if(player.x + 30 > door.x && player.x < door.x + door.width &&
            player.y + 30 > door.y && player.y < door.y + door.height){
-            
-            // salva posição para retornar ao sair da casa
+            // salva posição
             localStorage.setItem("returnX", player.x)
             localStorage.setItem("returnY", player.y)
-
             window.location.href = "house.html"
         }
     }
@@ -120,25 +129,28 @@ function update() {
     socket.emit("playerMove", player)
 }
 
-// desenha tudo
-function draw() {
+// função draw
+function draw(){
     ctx.clearRect(0,0,canvas.width,canvas.height)
-
     const offsetX = player.x - canvas.width/2
     const offsetY = player.y - canvas.height/2
 
     // chão verde
     ctx.fillStyle = "#3cb043"
-    ctx.fillRect(-offsetX, -offsetY, 2000, 2000)
+    ctx.fillRect(-offsetX, -offsetY, MAP_SIZE, MAP_SIZE)
 
-    // desenha árvores
+    // árvores
     for(let t of trees){
-        ctx.drawImage(treeImg, t.x - offsetX, t.y - offsetY, t.width, t.height)
+        if(treeImg.complete){
+            ctx.drawImage(treeImg, t.x - offsetX, t.y - offsetY, t.width, t.height)
+        }
     }
 
-    // desenha vilas
+    // vilas
     for(let v of villages){
-        ctx.drawImage(villageImg, v.x - offsetX, v.y - offsetY, v.width, v.height)
+        if(villageImg.complete){
+            ctx.drawImage(villageImg, v.x - offsetX, v.y - offsetY, v.width, v.height)
+        }
     }
 
     // jogadores
@@ -150,12 +162,3 @@ function draw() {
         ctx.fillText(p.name || "Player", p.x - offsetX - 15, p.y - offsetY - 10)
     }
 }
-
-// loop do jogo
-function gameLoop() {
-    update()
-    draw()
-    requestAnimationFrame(gameLoop)
-}
-
-gameLoop()
