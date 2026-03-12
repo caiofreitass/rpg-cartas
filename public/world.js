@@ -75,6 +75,26 @@ function update(){
 
     // envia posição para o servidor
     socket.emit("playerMove", player)
+
+    // dentro da função update()
+for(let house of houses){
+    let hx = house.x
+    let hy = house.y
+    let hw = house.width
+    let hh = house.height
+
+    let playerBottomX = player.x + 15
+    let playerBottomY = player.y + 30
+
+    // se encostar na porta (centro inferior da casa)
+    if(playerBottomX > hx + hw/4 && playerBottomX < hx + 3*hw/4 && playerBottomY > hy + hh - 10 && playerBottomY < hy + hh){
+        // salva posição no mundo
+        player.worldX = player.x
+        player.worldY = player.y
+        window.location.href = "house.html"  // entra na casa
+    }
+}
+    
 }
 
 // função draw
