@@ -202,12 +202,21 @@ io.on("connection", (socket) => {
 socket.emit("worldState", { trees, worldPlayers });
     
   // quando jogador entra no mundo aberto
-worldPlayers[socket.id] = { x: 200, y: 200, name: "Jogador" };
+worldPlayers[socket.id] = { 
+  x: 200, 
+  y: 200, 
+  name: "Jogador", 
+  class: "humano", // default, pode mudar pelo client
+  direction: "right" 
+};
 
 // Recebe movimentação e envia para todos
 socket.on("playerMove", (data) => {
+  if (!worldPlayers[socket.id]) return;
   worldPlayers[socket.id].x = data.x;
   worldPlayers[socket.id].y = data.y;
+  worldPlayers[socket.id].direction = data.direction || "right";
+  worldPlayers[socket.id].class = data.class || worldPlayers[socket.id].class;
   io.emit("worldPlayersUpdate", worldPlayers); // todos recebem
 });
 
