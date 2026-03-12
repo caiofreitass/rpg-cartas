@@ -10,6 +10,20 @@ let worldPlayers = {};
 let canvas = document.getElementById("worldCanvas");
 let ctx = canvas.getContext("2d");
 
+// Pega a classe salva no house
+const playerClass = localStorage.getItem("playerClass") || "humano"; // humano como default
+
+// Cria a imagem do jogador
+const playerImg = new Image();
+playerImg.src = `./images/${playerClass}.png`;
+
+let player = {
+    x: 200,
+    y: 200,
+    width: 48,
+    height: 48,
+    direction: "right" // inicial
+};
 // --- Teclado ---
 const keys = {};
 document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
